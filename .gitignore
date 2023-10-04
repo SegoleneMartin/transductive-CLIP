@@ -8,4 +8,4 @@ results
 CLIP_eval.py
 utils.py
 scripts/
-__pycache__
+__pycache__/
