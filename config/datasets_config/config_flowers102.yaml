@@ -1,0 +1,11 @@
+DATA:
+    dataset: 'flowers102'
+    root: 'data'
+    dataset_path: 'data/flowers102/'
+    num_classes_train: 102
+    num_classes_test: 102
+    
+DISTRIBUTED:
+    cuda: True
+    seed: 2020
+    log_path: 'logs' # path to where log files will be saved 

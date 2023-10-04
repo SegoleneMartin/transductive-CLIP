@@ -1,0 +1,11 @@
+DATA:
+    dataset: 'stanfordcars'
+    root: 'data'
+    dataset_path: 'data/stanfordcars/'
+    num_classes_train: 196
+    num_classes_test: 196
+    
+DISTRIBUTED:
+    cuda: True
+    seed: 2020
+    log_path: 'logs' # path to where log files will be saved 

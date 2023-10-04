@@ -1,0 +1,10 @@
+*.zip
+*.pt
+*.plk
+data/
+logs
+results
+*.DS_Store
+CLIP_eval.py
+utils.py
+scripts/

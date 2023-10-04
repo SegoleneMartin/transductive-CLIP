@@ -1,0 +1,11 @@
+DATA:
+    dataset: 'dtd'
+    root: 'data'
+    dataset_path: 'data/dtd/'
+    num_classes_train: 47
+    num_classes_test: 47
+    
+DISTRIBUTED:
+    cuda: True
+    seed: 2020
+    log_path: 'logs' # path to where log files will be saved 

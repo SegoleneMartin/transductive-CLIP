@@ -1,0 +1,11 @@
+DATA:
+    dataset: 'food101'
+    root: 'data'
+    dataset_path: 'data/food101/'
+    num_classes_train: 101
+    num_classes_test: 101
+    
+DISTRIBUTED:
+    cuda: True
+    seed: 2020
+    log_path: 'logs' # path to where log files will be saved 

@@ -1,0 +1,9 @@
+METHOD:
+  name_method: 'HARD_EM_DIRICHLET'
+  iter: 10
+  lambd: 0  
+  iter_mm: 1000
+  fact_opts: {'oxfordpets': 1.0, 'eurosat': 1.0, 'ucf101': 1.0, 'fgvcaircraft': 1.0, 'food101': 1.6, 'dtd': 1.2, 'caltech101': 1.0, 'flowers102': 1.1, 'stanfordcars': 2.0 }
+  T_opts: {'oxfordpets': 20, 'eurosat': 100, 'ucf101': 5, 'fgvcaircraft': 20, 'food101': 10, 'dtd': 4, 'caltech101': 3, 'flowers102': 2, 'stanfordcars': 15}
+  fact: 1.0
+  acc_clustering: True

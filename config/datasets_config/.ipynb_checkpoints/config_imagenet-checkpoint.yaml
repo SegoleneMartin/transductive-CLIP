@@ -1,0 +1,11 @@
+DATA:
+    dataset: 'imagenet'
+    root: 'data'
+    dataset_path: 'data/imagenet/'
+    num_classes_train: 20000
+    num_classes_test: 1000
+    
+DISTRIBUTED:
+    cuda: True
+    seed: 2020
+    log_path: 'logs' # path to where log files will be saved 

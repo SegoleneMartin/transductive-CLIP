@@ -1,0 +1,11 @@
+DATA:
+    dataset: 'sun397'
+    root: 'data'
+    dataset_path: 'data/sun397/'
+    num_classes_train: 397
+    num_classes_test: 397
+    
+DISTRIBUTED:
+    cuda: True
+    seed: 2020
+    log_path: 'logs' # path to where log files will be saved 

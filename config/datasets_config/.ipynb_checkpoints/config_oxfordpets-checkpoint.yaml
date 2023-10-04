@@ -1,0 +1,12 @@
+DATA:
+    dataset: 'oxfordpets'
+    root: 'data'
+    dataset_path: 'data/oxfordpets/'
+    num_classes_train: 37
+    num_classes_test: 37
+    
+DISTRIBUTED:
+    cuda: True
+    seed: 2020
+    log_path: 'logs' # path to where log files will be saved 
+

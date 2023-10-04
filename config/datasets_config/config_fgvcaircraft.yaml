@@ -1,0 +1,11 @@
+DATA:
+    dataset: 'fgvcaircraft'
+    root: 'data'
+    dataset_path: 'data/fgvcaircraft/'
+    num_classes_train: 100
+    num_classes_test: 100
+    
+DISTRIBUTED:
+    cuda: True
+    seed: 2020
+    log_path: 'logs' # path to where log files will be saved 
