@@ -308,11 +308,9 @@ class DatasetWrapper(TorchDataset):
         }
         img0 = read_image(item.impath)
         img = self.transform(img0)
-        #output['img0'] = self.to_tensor(img0)
         output['img'] = img
         
         return output['img'], output['label']
-        #return img0, output['label']
 
 
 def build_data_loader(

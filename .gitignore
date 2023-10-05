@@ -6,7 +6,6 @@ logs
 results_old
 *.DS_Store
 CLIP_eval.py
-utils.py
 scripts_old/
 __pycache__/
 */__pycache__/
