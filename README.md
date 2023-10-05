@@ -29,7 +29,7 @@ The downloaded datasets should be placed in the folder data/ the following way:
 
 ### 1.3 Extracting and saving the features
 For all the temperatures $T \in [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]$, we extract and save the features defined as
-\[ z_n = \text{softmax}(T \cos(f_{\text{im}}(x_n), f_{\text{text}}(t_k) ) \]
+$$ z_n = \text{softmax}(T \cos(f_{\text{im}}(x_n), f_{\text{text}}(t_k) ) $$
 
 For instance, for the dataset eurosat, the temperature T=10 and the backbone RN50, the features will be saved under
 
@@ -60,7 +60,7 @@ To evaluate the methods in a 0-shot setting, run
 ```bash scripts/script_test_0shot.sh```
 The results will be saved in results/test/method.
 
-### 1.6 Evaluation in a $s$-shot setting, with $s >0$
+### 1.6 Evaluation in a s-shot setting, with s >0
 To evaluate the methods in a s-shot setting, run
 ```bash scripts/script_test_fewshot.sh```
 The results will be saved in results/test/method.
