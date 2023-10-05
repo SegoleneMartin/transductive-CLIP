@@ -47,18 +47,18 @@ class Evaluator:
             results : List of the mean accuracy for each number of support shots
         """
         # Define the data loaders
-        # dataset = dataset_list[self.args.dataset](self.args.dataset_path)
-        # train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
-        # val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
-        # test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        dataset = dataset_list[self.args.dataset](self.args.dataset_path)
+        train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
 
         # Extract features of query, support and val for all the temperatures (if they do not already exist)
-        # extract_features(model, dataset, test_loader, 'test', self.args, self.device)
-        # extract_features(model, dataset, val_loader, 'val', self.args, self.device)
-        # extract_features(model, dataset, train_loader, 'train', self.args, self.device)
+        extract_features(model, dataset, test_loader, 'test', self.args, self.device)
+        extract_features(model, dataset, val_loader, 'val', self.args, self.device)
+        extract_features(model, dataset, train_loader, 'train', self.args, self.device)
 
         # Load the features for the given temperature
-        if self.args.used_test_set == 'test':
+        if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one
             self.args.T = self.args.T_opts[self.args.dataset]
 
         if self.args.method == 'clip_linear_probe': # use image embeddings as feature vectors
@@ -114,6 +114,7 @@ class Evaluator:
             tasks = task_generator.generate_tasks()
 
             # Load the method (e.g. EM_DIRICHLET)
+            # select the optimal lambda (will probably be removed soon as finally there is no need for tuning lambda)
             if self.args.method == 'em_dirichlet' or self.args.method == 'hard_em_dirichlet':
                 if self.args.lambd_opt == False:
                     self.args.lambd = int(self.args.num_classes_test / self.args.k_eff) * self.args.n_query * self.args.fact # grid search on args.fact

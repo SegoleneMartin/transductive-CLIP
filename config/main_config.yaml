@@ -14,4 +14,4 @@ EVAL:
     device: 0
     T: 4                    # temperature for defining the features
     backbone: 'RN50'        # CLIP's pretrained backbone
-    lambd_opt: False
+    lambd_opt: False        # keep it to this value, will probably be removed soon
