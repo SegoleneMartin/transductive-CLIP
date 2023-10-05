@@ -30,7 +30,7 @@ The downloaded datasets should be placed in the folder data/ the following way:
 ### 1.3 Extracting and saving the features
 For all the temperatures $T \in [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]$, we extract and save the features defined as
 ```math 
-z_n = \text{softmax}(T \cos(f_{\text{im}}(x_n), f_{\text{text}}(t_k) ) 
+z_n = \text{softmax}(T \cos(f_{\text{im}}(x_n), f_{\text{text}}(t_k) )) 
 ```
 
 For instance, for the dataset eurosat, the temperature T=10 and the backbone RN50, the features will be saved under
