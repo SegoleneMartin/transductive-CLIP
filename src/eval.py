@@ -183,8 +183,6 @@ class Evaluator:
             method_builder = KL_KMEANS(**method_info)
         elif self.args.name_method == 'EM_DIRICHLET':
             method_builder = EM_DIRICHLET(**method_info)
-        elif self.args.name_method == 'EM_DIRICHLET':
-            method_builder = EM_DIRICHLET(**method_info)
         elif self.args.name_method == 'HARD_EM_DIRICHLET':
             method_builder = HARD_EM_DIRICHLET(**method_info)
         elif self.args.name_method == 'CLIP_LINEAR_PROBE':
