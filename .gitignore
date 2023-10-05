@@ -3,9 +3,10 @@
 *.plk
 data/
 logs
-results
+results_old
 *.DS_Store
 CLIP_eval.py
 utils.py
-scripts/
+scripts_old/
 __pycache__/
+*/__pycache__/

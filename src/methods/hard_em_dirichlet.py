@@ -6,6 +6,7 @@ from copy import deepcopy
 import numpy as np
 from scipy.sparse.csgraph import min_weight_full_bipartite_matching
 from scipy.sparse import csr_matrix
+from scipy.optimize import linear_sum_assignment
 
 class BASE(object):
 
@@ -73,6 +74,7 @@ class BASE(object):
             cluster_sizes = preds_q_one_hot.sum(1).unsqueeze(-1) # N x K
             nonzero_clusters = cluster_sizes > self.eps
             prototypes = prototypes * nonzero_clusters 
+            #prototypes = self.alpha
         else:
             prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1) + (y_s_one_hot.unsqueeze(-1) * support.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1) + y_s_one_hot.sum(1)).unsqueeze(-1)
 
@@ -92,7 +94,8 @@ class BASE(object):
         for task in range(n_task):
             A = list_A[task]
             clusters = list_clusters[task]
-            __, matching_classes = min_weight_full_bipartite_matching(csr_matrix(A), maximize=False)
+            #__, matching_classes = min_weight_full_bipartite_matching(csr_matrix(A), maximize=False)
+            __, matching_classes = linear_sum_assignment(A, maximize=False)
             for i, cluster in enumerate(preds_q[task]):
                 new_preds_q[task, i] = matching_classes[clusters.index(cluster)]
      

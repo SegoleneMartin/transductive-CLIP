@@ -6,6 +6,7 @@ from copy import deepcopy
 import numpy as np
 from scipy.sparse.csgraph import min_weight_full_bipartite_matching
 from scipy.sparse import csr_matrix
+from scipy.optimize import linear_sum_assignment
 
 class BASE(object):
 
@@ -88,7 +89,8 @@ class BASE(object):
         for task in range(n_task):
             A = list_A[task]
             clusters = list_clusters[task]
-            __, matching_classes = min_weight_full_bipartite_matching(csr_matrix(A), maximize=False)
+            #__, matching_classes = min_weight_full_bipartite_matching(csr_matrix(A), maximize=False)
+            __, matching_classes = linear_sum_assignment(A, maximize=False)
             for i, cluster in enumerate(preds_q[task]):
                 new_preds_q[task, i] = matching_classes[clusters.index(cluster)]
      
