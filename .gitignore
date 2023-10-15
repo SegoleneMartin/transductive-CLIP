@@ -9,3 +9,4 @@ scripts_old/
 __pycache__/
 */__pycache__/
 clip_inductive.py
+.ipynb_checkpoints
