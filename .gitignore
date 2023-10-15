@@ -5,7 +5,7 @@ data/
 logs
 results_old
 *.DS_Store
-CLIP_eval.py
 scripts_old/
 __pycache__/
 */__pycache__/
+clip_inductive.py
