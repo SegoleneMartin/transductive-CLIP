@@ -8,6 +8,9 @@ results_old
 scripts_old/
 __pycache__/
 */__pycache__/
+*/*/__pycache__/
 clip_inductive.py
 .ipynb_checkpoints/
+*/.ipynb_checkpoints/
+*/*/.ipynb_checkpoints/
 results/
