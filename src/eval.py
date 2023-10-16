@@ -9,7 +9,7 @@ from src.methods.hard_em_dirichlet import HARD_EM_DIRICHLET
 from src.methods.clip_inductive import CLIP
 from src.methods.clip_linear_probe import CLIP_LINEAR_PROBE
 from src.datasets import Tasks_Generator, SamplerSupport, SamplerQuery, CategoriesSampler, build_data_loader
-from src.datasets import OxfordPets, EuroSAT, UCF101, Caltech101, DescribableTextures, FGVCAircraft, Food101, Flowers102, StanfordCars, ImageNet
+from src.datasets import OxfordPets, EuroSAT, UCF101, Caltech101, DescribableTextures, FGVCAircraft, Food101, Flowers102, StanfordCars, ImageNet, SUN397
 import os
 from src.utils import load_pickle, extract_features
 
@@ -17,7 +17,7 @@ dataset_list = {
                 "oxfordpets": OxfordPets,
                 "eurosat": EuroSAT,
                 "ucf101": UCF101,
-                #"sun397": SUN397,
+                "sun397": SUN397,
                 "caltech101": Caltech101,
                 "dtd": DescribableTextures,
                 "fgvcaircraft": FGVCAircraft,
@@ -89,7 +89,7 @@ class Evaluator:
             
         results_task = []
         for i in range(int(self.args.number_tasks/self.args.batch_size)):
-            if self.args.dataset == 'stanfordcars' and self.args.used_test_set == 'val': # the validation set of stanford cars does not contain enough samples
+            if (self.args.dataset == 'stanfordcars' or self.args.dataset == 'sun397') and self.args.used_test_set == 'val': # the validation set of stanford cars does not contain enough samples
                 force_query_size = True
             else:
                 force_query_size = False
