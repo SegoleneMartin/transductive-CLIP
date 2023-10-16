@@ -123,6 +123,6 @@ class SamplerQuery:
                 if self.force_query_size == True:
                     n_trials += 1
                 query_size = len(query)
-          
+                #print("query_size", query_size)
             yield query
 
