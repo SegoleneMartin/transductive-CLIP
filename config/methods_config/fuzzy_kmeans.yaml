@@ -2,5 +2,5 @@ METHOD:
   name_method: 'FUZZY_KMEANS'
   iter: 10
   #T_opts: {'oxfordpets': 10, 'eurosat': 90, 'ucf101': 1, 'fgvcaircraft': 1, 'food101': 4, 'dtd': 4, 'caltech101': 1, 'flowers102': 2, 'stanfordcars': 1}
-  T_opts: {'oxfordpets': 100, 'eurosat': 4, 'ucf101': 1, 'fgvcaircraft': 70, 'food101': 2, 'dtd': 15, 'caltech101': 3, 'flowers102': 2, 'stanfordcars': 3}
+  T_opts: {'oxfordpets': 100, 'eurosat': 4, 'ucf101': 1, 'fgvcaircraft': 70, 'food101': 2, 'dtd': 15, 'caltech101': 3, 'flowers102': 2, 'stanfordcars': 3, 'sun397': 1, 'imagenet': 3}
   acc_clustering: True

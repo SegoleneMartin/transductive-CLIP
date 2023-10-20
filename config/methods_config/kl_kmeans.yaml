@@ -2,5 +2,5 @@ METHOD:
   name_method: 'KL_KMEANS'
   iter: 10
   #T_opts: {'oxfordpets': 10, 'eurosat': 20, 'ucf101': 15, 'fgvcaircraft': 20, 'food101': 15, 'dtd': 3, 'caltech101': 100, 'flowers102': 10, 'stanfordcars': 25}
-  T_opts: {'oxfordpets': 4, 'eurosat': 10, 'ucf101': 15, 'fgvcaircraft': 25, 'food101': 15, 'dtd': 1, 'caltech101': 10, 'flowers102': 10, 'stanfordcars': 25}
+  T_opts: {'oxfordpets': 4, 'eurosat': 10, 'ucf101': 15, 'fgvcaircraft': 25, 'food101': 15, 'dtd': 1, 'caltech101': 10, 'flowers102': 10, 'stanfordcars': 25, 'sun397': 40, 'imagenet': 10}
   acc_clustering: True
