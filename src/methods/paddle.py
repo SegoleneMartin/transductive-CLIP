@@ -201,8 +201,7 @@ class PADDLE(BASE):
         """
         counts = (y_s_one_hot.sum(1)).unsqueeze(-1)
         weights = (y_s_one_hot.unsqueeze(-1) * (support.unsqueeze(2))).sum(1)
-        self.w = weights.div_(counts)
-          
+        self.w = weights.div_(counts)          
 
     def w_update(self, support, query, y_s_one_hot):
         """
@@ -244,7 +243,7 @@ class PADDLE(BASE):
         n_task, n_support, n_ways = y_s_one_hot.shape
         
         self.v = torch.zeros(n_task, n_ways).to(self.device)
-        self.w = self.init_w(support, y_s_one_hot)
+        self.init_w(support, y_s_one_hot)
 
         pbar = tqdm(range(self.iter))
         for i in pbar:
@@ -257,14 +256,13 @@ class PADDLE(BASE):
             self.v_update()
 
             # Update centroids by averaging the assigned samples
-            self.w_update(self, support, query, y_s_one_hot)
-    
-            criterions = (u_old - self.u).norm(dim=(1,2)).mean(0) 
-            t1 = time.time()
-            self.record_convergence(new_time=t1-t0, criterions=criterions)
-            u_old = deepcopy(self.u)
+            self.w_update(support, query, y_s_one_hot)
             
+            t1 = time.time()
+            u_old = deepcopy(self.u)
+
             if i in [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                criterions = (u_old - self.u).norm(dim=(1,2)).mean(0) 
                 pbar.set_description(f"Criterion: {criterions}")
                 self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
                 t1 = time.time()

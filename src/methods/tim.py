@@ -20,6 +20,7 @@ class BASE(object):
         self.args = args
         self.eps = 1e-15
         self.loss_weights = args.loss_weights.copy()
+        self.temp = args.temp
 
 
     def init_info_lists(self):
@@ -38,59 +39,19 @@ class BASE(object):
         self.timestamps.append(new_time)
 
 
-    def compute_acc(self, y_q):
+    def compute_acc(self, y_q, logits_q):
         """
         inputs:
             y_q : torch.Tensor of shape [n_task, n_query] :
         """
-
-        preds_q = self.u.argmax(2)
+        preds_q = logits_q.argmax(2)
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
 
 
-    def compute_acc_clustering(self, query, y_q, support, y_s_one_hot):
-        n_task = query.shape[0]
-        preds_q = self.u.argmax(2)
-        preds_q_one_hot = get_one_hot_full(preds_q, self.args.num_classes_test)
-        new_preds_q = torch.zeros_like(y_q)
-
-        if self.args.shots == 0:
-            prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1).clamp(min=self.eps).unsqueeze(-1))
-            cluster_sizes = preds_q_one_hot.sum(1).unsqueeze(-1) # N x K
-            nonzero_clusters = cluster_sizes > self.eps
-            prototypes = prototypes * nonzero_clusters 
-        else:
-            prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1) + (y_s_one_hot.unsqueeze(-1) * support.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1) + y_s_one_hot.sum(1)).unsqueeze(-1)
-
-        list_clusters = []
-        list_A = []
-        for task in range(n_task):
-            clusters = []
-            num_clusters = len(torch.unique(preds_q[task]))
-            A = np.zeros((num_clusters, int(self.args.n_ways)))
-            for i, cluster in enumerate(preds_q[task]):
-                if cluster.item() not in clusters:
-                    A[len(clusters), :] = - prototypes[task, cluster].cpu().numpy()
-                    clusters.append(cluster.item())
-            list_A.append(A)
-            list_clusters.append(clusters)
-        
-        for task in range(n_task):
-            A = list_A[task]
-            clusters = list_clusters[task]
-            #__, matching_classes = min_weight_full_bipartite_matching(csr_matrix(A), maximize=False)
-            __, matching_classes = linear_sum_assignment(A, maximize=False)
-            for i, cluster in enumerate(preds_q[task]):
-                new_preds_q[task, i] = matching_classes[clusters.index(cluster)]
-     
-        accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
-        self.test_acc.append(accuracy)
-
-
     def get_logs(self):
-        self.criterions = torch.stack(self.criterions, dim=0).cpu().numpy()
-        self.test_acc = torch.cat(self.test_acc, dim=1).cpu().numpy()
+        self.criterions = torch.stack(self.criterions, dim=0).detach().cpu().numpy()
+        self.test_acc = torch.cat(self.test_acc, dim=1).detach().cpu().numpy()
         return {'timestamps': self.timestamps, 'criterions':self.criterions,
                 'acc': self.test_acc}
 
@@ -109,8 +70,8 @@ class BASE(object):
         query = task_dic['x_q']             # [n_task, n_query, feature_dim]
 
         # Transfer tensors to GPU if needed
-        support = support.to(self.device).double()
-        query = query.to(self.device).double()
+        support = support.to(self.device).float() #.double()
+        query = query.to(self.device).float() #.double()
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
@@ -222,7 +183,7 @@ class TIM_GD(BASE):
         if self.args.acc_clustering == True:
             self.compute_acc_clustering(query, y_q, support, y_s_one_hot)
         else:
-            self.compute_acc(y_q=y_q)
+            self.compute_acc(y_q=y_q, logits_q=logits_q)
 
 
 class ALPHA_TIM(BASE):
@@ -286,7 +247,8 @@ class ALPHA_TIM(BASE):
             self.weights : torch.Tensor of shape [n_task, num_class, feature_dim]
         """
         self.logger.info(" ==> Executing ALPHA_TIM")
-
+        self.init_weights(support=support, y_s=y_s, query=query)
+        
         self.weights.requires_grad_()
         n_task = support.shape[0]
         optimizer = torch.optim.Adam([self.weights], lr=self.lr)
@@ -334,18 +296,17 @@ class ALPHA_TIM(BASE):
             optimizer.step()
 
             t1 = time.time()
+
             if i in [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-                weight_diff = (weights_old - self.weights).norm(dim=-1).mean(-1)
-                criterions = weight_diff
-                self.record_convergence(new_time=t1-t0, criterions=criterions)
-                pbar.set_description(f"Criterion: {criterions}")
-                self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
+                weight_diff = (weights_old - self.weights.detach()).norm(dim=-1).mean()
+                pbar.set_description(f"Criterion: {weight_diff}")
+                self.record_convergence(new_time=(t1-t0) / n_task, criterions=weight_diff)
                 t1 = time.time()
 
         t1 = time.time()
         self.model.eval()
-        self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
+        self.record_convergence(new_time=(t1-t0) / n_task, criterions=weight_diff)
         if self.args.acc_clustering == True:
             self.compute_acc_clustering(query, y_q, support, y_s_one_hot)
         else:
-            self.compute_acc(y_q=y_q)
+            self.compute_acc(y_q=y_q, logits_q=logits_q)

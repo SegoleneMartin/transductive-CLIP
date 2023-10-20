@@ -4,7 +4,8 @@ from src.utils import compute_confidence_interval, Logger
 from src.methods.fuzzy_kmeans import FUZZY_KMEANS
 from src.methods.kl_kmeans import KL_KMEANS
 from src.methods.em_dirichlet import EM_DIRICHLET
-from src.methods.hard_em_dirichlet import HARD_EM_DIRICHLET
+from src.methods.paddle import PADDLE
+from src.methods.tim import ALPHA_TIM, TIM_GD
 from src.methods.hard_em_dirichlet import HARD_EM_DIRICHLET
 from src.methods.clip_inductive import CLIP
 from src.methods.clip_linear_probe import CLIP_LINEAR_PROBE
@@ -49,10 +50,10 @@ class Evaluator:
         model.eval()
         
         # Define the data loaders
-        dataset = dataset_list[self.args.dataset](self.args.dataset_path)
-        train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        #dataset = dataset_list[self.args.dataset](self.args.dataset_path)
+        #train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
         #val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
-        test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        #test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
 
         # Extract features of query, support and val for all the temperatures (if they do not already exist)
         #extract_features(model, dataset, test_loader, 'test', self.args, self.device)
@@ -187,6 +188,10 @@ class Evaluator:
             method_builder = EM_DIRICHLET(**method_info)
         elif self.args.name_method == 'HARD_EM_DIRICHLET':
             method_builder = HARD_EM_DIRICHLET(**method_info)
+        elif self.args.name_method == 'PADDLE':
+            method_builder = PADDLE(**method_info)
+        elif self.args.name_method == 'ALPHA_TIM':
+            method_builder = ALPHA_TIM(**method_info)
         elif self.args.name_method == 'CLIP_LINEAR_PROBE':
             method_builder = CLIP_LINEAR_PROBE(**method_info)
         else:
