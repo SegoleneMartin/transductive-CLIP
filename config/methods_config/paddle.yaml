@@ -3,4 +3,3 @@ METHOD:
   iter: 20
   lambd: 0
   acc_clustering: False
-  T_opts: {'oxfordpets': 4, 'eurosat': 100, 'ucf101': 15, 'fgvcaircraft': 25, 'food101': 15, 'dtd': 1, 'caltech101': 10, 'flowers102': 10, 'stanfordcars': 25, 'sun397': 40, 'imagenet': 10}

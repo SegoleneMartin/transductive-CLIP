@@ -5,6 +5,5 @@ METHOD:
   lr_alpha_tim: 1e-4
   iter: 1000
   entropies: ['Shannon', 'Alpha', 'Alpha'] # [Xent, H(Y), H(Y|X)]
-  alpha_values: [5.0, 7.0, 5.0] # [Xent, H(Y), H(Y|X)]
+  alpha_values: 7.0 # [Xent, H(Y), H(Y|X)]
   acc_clustering: False
-  T_opts: {'oxfordpets': 4, 'eurosat': 100, 'ucf101': 15, 'fgvcaircraft': 25, 'food101': 15, 'dtd': 1, 'caltech101': 10, 'flowers102': 10, 'stanfordcars': 25, 'sun397': 40, 'imagenet': 10}

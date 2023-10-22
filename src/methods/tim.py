@@ -192,7 +192,7 @@ class ALPHA_TIM(BASE):
         super().__init__(model=model, device=device, log_file=log_file, args=args)
         self.lr = float(args.lr_alpha_tim)
         self.entropies = args.entropies.copy()
-        self.alpha_values = args.alpha_values
+        self.alpha_value = args.alpha_value
 
 
     def __del__(self):
@@ -267,8 +267,8 @@ class ALPHA_TIM(BASE):
             if self.entropies[0] == 'Shannon':
                 ce = - (y_s_one_hot * torch.log(logits_s.softmax(2) + 1e-12)).sum(2).mean(1).sum(0)
             elif self.entropies[0] == 'Alpha':
-                ce = torch.pow(y_s_one_hot, self.alpha_values[0]) * torch.pow(logits_s.softmax(2) + 1e-12, 1 - self.alpha_values[0])
-                ce = ((1 - ce.sum(2))/(self.alpha_values[0] - 1)).mean(1).sum(0)
+                ce = torch.pow(y_s_one_hot, self.alpha_value) * torch.pow(logits_s.softmax(2) + 1e-12, 1 - self.alpha_value)
+                ce = ((1 - ce.sum(2))/(self.alpha_value - 1)).mean(1).sum(0)
             else:
                 raise ValueError("Entropies must be in ['Shannon', 'Alpha']")
 
@@ -276,7 +276,7 @@ class ALPHA_TIM(BASE):
             if self.entropies[1] == 'Shannon':
                 q_ent = - (q_probs.mean(1) * torch.log(q_probs.mean(1))).sum(1).sum(0)
             elif self.entropies[1] == 'Alpha':
-                q_ent = ((1 - (torch.pow(q_probs.mean(1), self.alpha_values[1])).sum(1)) / (self.alpha_values[1] - 1)).sum(0)
+                q_ent = ((1 - (torch.pow(q_probs.mean(1), self.alpha_value)).sum(1)) / (self.alpha_value - 1)).sum(0)
             else:
                 raise ValueError("Entropies must be in ['Shannon', 'Alpha']")
 
@@ -284,7 +284,7 @@ class ALPHA_TIM(BASE):
             if self.entropies[2] == 'Shannon':
                 q_cond_ent = - (q_probs * torch.log(q_probs + 1e-12)).sum(2).mean(1).sum(0)
             elif self.entropies[2] == 'Alpha':
-                q_cond_ent = ((1 - (torch.pow(q_probs + 1e-12, self.alpha_values[2])).sum(2)) / (self.alpha_values[2] - 1)).mean(1).sum(0)
+                q_cond_ent = ((1 - (torch.pow(q_probs + 1e-12, self.alpha_value)).sum(2)) / (self.alpha_value - 1)).mean(1).sum(0)
             else:
                 raise ValueError("Entropies must be in ['Shannon', 'Alpha']")
 

@@ -29,6 +29,7 @@ dataset_list = {
                 }
 
 
+
 class Evaluator:
     def __init__(self, device, args, log_file):
         self.device = device
@@ -61,15 +62,33 @@ class Evaluator:
         #extract_features(model, dataset, train_loader, 'train', self.args, self.device)
 
         # Load the features for the given temperature
-        if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one
-            self.args.T = self.args.T_opts[self.args.dataset]
+        if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
+            path = 'results/val/{}'.format(self.args.dataset)
+            name_file = path + '/{}.txt'.format(self.args.name_method)
+                
+            try:
+                f =  open(name_file, 'r')
+                list_param, list_acc = [], []
+                for i, line in enumerate(f):
+                    if i == 0 :
+                        continue
+                    line = line.split('\t')
+                    list_param.append(int(line[0]))
+                    list_acc.append(float(line[1]))
 
-        if self.args.method == 'clip_linear_probe': # use image embeddings as feature vectors
-            filepath_support = 'data/{}/saved_features/train_{}.plk'.format(self.args.dataset, self.args.backbone)
-            filepath_query = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
-        else: # use softmaxs as feature vectors
+                index = np.argmax(np.array(list_acc))
+                opt_param = list_param[index]
+            except:
+                raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")
+            self.set_method_opt_param(opt_param)
+
+        if self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'fuzzy_kmeans', 'kl_kmeans']: # use softmaxs as feature vectors
             filepath_support = 'data/{}/saved_features/train_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.backbone, self.args.T)
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
+        
+        else : # use image embeddings as feature vectors
+            filepath_support = 'data/{}/saved_features/train_{}.plk'.format(self.args.dataset, self.args.backbone)
+            filepath_query = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
 
         extracted_features_dic_support = load_pickle(filepath_support)
         extracted_features_dic_query = load_pickle(filepath_query)
@@ -117,12 +136,6 @@ class Evaluator:
             tasks = task_generator.generate_tasks()
 
             # Load the method (e.g. EM_DIRICHLET)
-            # select the optimal lambda (will probably be removed soon as finally there is no need for tuning lambda)
-            if self.args.method == 'em_dirichlet' or self.args.method == 'hard_em_dirichlet':
-                if self.args.lambd_opt == False:
-                    self.args.lambd = int(self.args.num_classes_test / self.args.k_eff) * self.args.n_query * self.args.fact # grid search on args.fact
-                else:
-                    self.args.lambd = int(self.args.num_classes_test /  self.args.k_eff) *  self.args.n_query *  self.args.fact_opts[self.args.dataset] # use the optimal fact given in the config file of the method
             method = self.get_method_builder(model=model)
 
             # Run task
@@ -137,20 +150,39 @@ class Evaluator:
 
         mean_accuracies = np.asarray(results).mean(1)
     
-        # Report results in .txt files
-        if self.args.name_method in ['FUZZY_KMEANS', 'KL_KMEANS']:
-                param = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) + '\t' + str(self.args.T)
-                param_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'T'
-        if self.args.name_method in ['EM_DIRICHLET', 'HARD_EM_DIRICHLET']:
-                param = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) + '\t' + str(self.args.iter_mm) + '\t' + str(self.args.lambd) + '\t' + str(self.args.T)
-                param_names ='shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'iter_mm' + '\t' + 'lambd' + '\t' + 'T'
-        if self.args.name_method == 'CLIP_LINEAR_PROBE':
-                param = str(self.args.shots)+  '\t' + str(self.args.k_eff)  + '\t' + str(self.args.n_query)
-                param_names = 'shots' + '\t' + 'k_eff' + '\t' + 'n_query'       
-            
-        self.logger.info('----- Final test results -----')
+    
+        self.logger.info('----- Final results -----')
         
-        if self.args.save_results == True:
+        
+        ## If validation mode, report results
+        if self.args.used_test_set == 'val': 
+            self.get_method_val_param()
+                        
+            path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            name_file = path + '/{}.txt'.format(self.args.name_method)
+
+            if not os.path.exists(path):
+                os.makedirs(path)
+            if os.path.isfile(name_file) == True:
+                f = open(name_file, 'a')
+                #print('Adding to already existing .txt file to avoid overwritting')
+            else:
+                f = open(name_file, 'w')
+                f.write('val_param' + '\t' + 'acc' + '\n')
+                
+            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks,
+                                                                                    mean_accuracies[0]))
+            f.write(str(self.val_param) + '\t')
+            f.write(str(round(100 * mean_accuracies[0], 2)) + '\t' )
+            f.write('\n')
+            f.close()
+    
+    
+        elif  self.args.used_test_set == 'test' and self.args.save_results == True:
+            
+            # Report results in .txt files
+            param = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
+            param_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff'
            
             path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}.txt'.format(self.args.name_method)
@@ -174,7 +206,6 @@ class Evaluator:
         else:
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies[0]))
             
-
         return mean_accuracies
 
     def get_method_builder(self, model):
@@ -198,3 +229,20 @@ class Evaluator:
             self.logger.exception("Method must be in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET', 'CLIP_LINEAR_PROBE']")
             raise ValueError("Method must be in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET', 'CLIP_LINEAR_PROBE']")
         return method_builder
+    
+    
+    def get_method_val_param(self):
+        # fixes for each method the name of the parameter on which validation is performed
+        if self.args.name_method in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET']:
+            self.val_param = self.args.T
+        elif self.args.name_method == 'ALPHA_TIM':
+            self.val_param = self.args.alpha_value
+
+            
+    def set_method_opt_param(self, opt_param):
+        # fixes for each method the name of the parameter on which validation is performed
+        if self.args.name_method in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET']:
+            print("opt_param", opt_param)
+            self.args.T = opt_param
+        elif self.args.name_method == 'ALPHA_TIM':
+            self.args.alpha_value = opt_param

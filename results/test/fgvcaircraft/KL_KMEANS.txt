@@ -1,2 +1,0 @@
-shots	n_query	k_eff	T	
-0	75	5	25	19.7	

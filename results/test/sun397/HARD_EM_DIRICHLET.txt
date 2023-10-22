@@ -1,3 +1,0 @@
-shots	n_query	k_eff	iter_mm	lambd	T	
-0	75	5	1000	5925.0	25	81.6	
-0	75	5	1000	5925.0	30	79.9	
