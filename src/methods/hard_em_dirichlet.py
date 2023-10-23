@@ -62,13 +62,12 @@ class BASE(object):
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
 
-
     def compute_acc_clustering(self, query, y_q, support, y_s_one_hot):
         n_task = query.shape[0]
         preds_q = self.u.argmax(2)
         preds_q_one_hot = get_one_hot_full(preds_q, self.args.num_classes_test)
         new_preds_q = torch.zeros_like(y_q)
-
+        
         if self.args.shots == 0:
             prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1).clamp(min=self.eps).unsqueeze(-1))
             cluster_sizes = preds_q_one_hot.sum(1).unsqueeze(-1) # N x K

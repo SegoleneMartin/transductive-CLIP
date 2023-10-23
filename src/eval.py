@@ -65,7 +65,12 @@ class Evaluator:
         if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
             path = 'results/val/{}'.format(self.args.dataset)
             name_file = path + '/{}.txt'.format(self.args.name_method)
+            
+            if self.args.dataset == 'imagenet':
+                path = 'results/val/{}'.format('caltech101')
+                name_file = path + '/{}.txt'.format(self.args.name_method)
                 
+            print(" path", path)
             try:
                 f =  open(name_file, 'r')
                 list_param, list_acc = [], []
