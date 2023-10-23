@@ -182,9 +182,9 @@ class Evaluator:
             
             # Report results in .txt files
             param = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
-            param_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff'
+            param_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
-            path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results/{}/{}_query'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}.txt'.format(self.args.name_method)
 
             if not os.path.exists(path):
