@@ -81,7 +81,9 @@ class Evaluator:
                     list_param.append(int(line[0]))
                     list_acc.append(float(line[1]))
 
-                index = np.argmax(np.array(list_acc))
+                list_acc = np.array(list_acc)
+                index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
+                #index = np.argmax(np.array(list_acc))
                 opt_param = list_param[index]
             except:
                 raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")
