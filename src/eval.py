@@ -64,7 +64,7 @@ class Evaluator:
         # Load the features for the given temperature
         if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
             path = 'results/val/{}'.format(self.args.dataset)
-            name_file = path + '/{}.txt'.format(self.args.name_method)
+            name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
             
             if self.args.dataset == 'imagenet':
                 path = 'results/val/{}'.format('caltech101')
@@ -88,13 +88,18 @@ class Evaluator:
             except:
                 raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")
             self.set_method_opt_param(opt_param)
+        
+        if self.args.used_test_set == 'val':
+            self.args.used_train_set = 'val'
+        else:
+            self.args.used_train_set = 'train'
 
         if self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'fuzzy_kmeans', 'kl_kmeans']: # use softmaxs as feature vectors
-            filepath_support = 'data/{}/saved_features/train_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.backbone, self.args.T)
+            filepath_support = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone, self.args.T)
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
         
         else : # use image embeddings as feature vectors
-            filepath_support = 'data/{}/saved_features/train_{}.plk'.format(self.args.dataset, self.args.backbone)
+            filepath_support = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone)
             filepath_query = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
 
         extracted_features_dic_support = load_pickle(filepath_support)
@@ -139,7 +144,7 @@ class Evaluator:
                 test_loader_support.append((all_features_support[indices,:], all_labels_support[indices]))
             
             # Prepare the tasks
-            task_generator = Tasks_Generator(k_eff=self.args.k_eff, n_ways=self.args.n_ways, shot=shot, n_query=self.args.n_query, loader_support=test_loader_support, loader_query=test_loader_query, model=model)
+            task_generator = Tasks_Generator(k_eff=self.args.k_eff, n_ways=self.args.n_ways, shot=shot, n_query=self.args.n_query, loader_support=test_loader_support, loader_query=test_loader_query, model=model, args=self.args)
             tasks = task_generator.generate_tasks()
 
             # Load the method (e.g. EM_DIRICHLET)
@@ -166,7 +171,7 @@ class Evaluator:
             self.get_method_val_param()
                         
             path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
-            name_file = path + '/{}.txt'.format(self.args.name_method)
+            name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
 
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -192,7 +197,7 @@ class Evaluator:
             param_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
             path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
-            name_file = path + '/{}_query.txt'.format(self.args.name_method)
+            name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
 
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -244,6 +249,8 @@ class Evaluator:
             self.val_param = self.args.T
         elif self.args.name_method == 'ALPHA_TIM':
             self.val_param = self.args.alpha_value
+        elif self.args.name_method == 'PADDLE':
+            self.val_param = self.args.lambd
 
             
     def set_method_opt_param(self, opt_param):
@@ -253,3 +260,5 @@ class Evaluator:
             self.args.T = opt_param
         elif self.args.name_method == 'ALPHA_TIM':
             self.args.alpha_value = opt_param
+        elif self.args.name_method == 'PADDLE':
+            self.args.lambd = opt_param

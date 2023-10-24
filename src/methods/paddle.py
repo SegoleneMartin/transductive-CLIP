@@ -237,7 +237,7 @@ class PADDLE(BASE):
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]     (centroids)
         """
 
-        self.logger.info(" ==> Executing PADDLE with LAMBDA = {} and T = {}".format(self.lambd, self.args.T))
+        self.logger.info(" ==> Executing PADDLE with LAMBDA = {}".format(self.lambd))
         
         y_s_one_hot = get_one_hot(y_s)
         n_task, n_support, n_ways = y_s_one_hot.shape

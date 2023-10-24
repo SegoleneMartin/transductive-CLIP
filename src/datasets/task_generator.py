@@ -1,7 +1,7 @@
 import torch
 
 class Tasks_Generator:
-    def __init__(self, k_eff, shot, n_query, n_ways, loader_support, loader_query, model):
+    def __init__(self, k_eff, shot, n_query, n_ways, loader_support, loader_query, model, args):
         self.k_eff = k_eff
         self.shot = shot
         self.n_query = n_query
@@ -9,6 +9,7 @@ class Tasks_Generator:
         self.loader_query = loader_query
         self.n_ways = n_ways
         self.model = model
+        self.args = args
         
     def get_task(self, data_support, data_query, labels_support, labels_query):
         """
@@ -32,8 +33,13 @@ class Tasks_Generator:
             new_labels_support[labels_support == y] = j 
             new_labels_query[labels_query == y] = j 
                 
-        new_data_query = data_query[:, unique_labels]
-        new_data_support = data_support[:, unique_labels]
+        if self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'fuzzy_kmeans', 'kl_kmeans']:
+            new_data_query = data_query[:, unique_labels]
+            new_data_support = data_support[:, unique_labels]
+        else:
+            new_data_query = data_query
+            new_data_support = data_support
+            
         torch.cuda.empty_cache()
 
         task = {'x_s': new_data_support, 'y_s': new_labels_support.long(),
