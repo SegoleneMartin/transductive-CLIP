@@ -1,0 +1,4 @@
+shots	n_query	k_eff	acc
+	
+16	75	5	53.1	
+16	75	5	53.1	

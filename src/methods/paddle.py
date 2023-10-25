@@ -114,6 +114,8 @@ class BASE(object):
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
+        print("support", support.shape)
+        print("query", query.shape)
 
         scaler = MinMaxScaler(feature_range=(0, 1))
         support, query, scale, ratio = scaler(support, query)
