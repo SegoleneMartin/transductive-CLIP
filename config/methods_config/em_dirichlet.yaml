@@ -4,3 +4,4 @@ METHOD:
   lambd: 0  
   iter_mm: 1000
   acc_clustering: True
+  fact: 1.0

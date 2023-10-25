@@ -13,7 +13,7 @@ class BASE(object):
     def __init__(self, model, device, log_file, args):
         self.device = device
         self.iter = args.iter
-        self.lambd = int(args.num_classes_test / args.k_eff) * args.n_query 
+        self.lambd = int(args.num_classes_test / args.k_eff) * args.n_query * args.fact
         self.model = model
         self.log_file = log_file
         self.logger = Logger(__name__, self.log_file)

@@ -63,38 +63,55 @@ class Evaluator:
 
         # Load the features for the given temperature
         if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
-            path = 'results/val/{}'.format(self.args.dataset)
+            path = 'results_standard/val/{}'.format(self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
             
             if self.args.dataset == 'imagenet':
-                path = 'results/val/{}'.format('caltech101')
+                path = 'results_standard/val/{}'.format('caltech101')
                 name_file = path + '/{}.txt'.format(self.args.name_method)
                 
             print(" path", path)
             try:
+                #f =  open(name_file, 'r')
+                #list_param, list_acc = [], []
+                #for i, line in enumerate(f):
+                #    if i == 0 :
+                #        continue
+                #    line = line.split('\t')
+                #    list_param.append(int(line[0]))
+                #    list_acc.append(float(line[1]))
+                #list_acc = np.array(list_acc)
+                #index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
+                #opt_param = list_param[index]
+        
+                    
                 f =  open(name_file, 'r')
-                list_param, list_acc = [], []
+                list_param1, list_param2 , list_acc = [], [], []
                 for i, line in enumerate(f):
                     if i == 0 :
                         continue
                     line = line.split('\t')
-                    list_param.append(int(line[0]))
-                    list_acc.append(float(line[1]))
+                    list_param1.append(int(line[0]))
+                    list_param2.append(float(line[1]))
+                    list_acc.append(float(line[2]))
 
                 list_acc = np.array(list_acc)
                 index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
-                #index = np.argmax(np.array(list_acc))
-                opt_param = list_param[index]
+                opt_param1 = list_param1[index]
+                opt_param2 = list_param2[index]
             except:
+                
                 raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")
-            self.set_method_opt_param(opt_param)
+            #self.set_method_opt_param(opt_param)
+            self.set_method_opt_params(opt_param1, opt_param2)
         
         if self.args.used_test_set == 'val':
             self.args.used_train_set = 'val'
         else:
             self.args.used_train_set = 'train'
 
-        if self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'fuzzy_kmeans', 'kl_kmeans']: # use softmaxs as feature vectors
+        #if self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'fuzzy_kmeans', 'kl_kmeans']: # use softmaxs as feature vectors
+        if self.args.method in ['paddle', 'alpha_tim', 'em_dirichlet', 'hard_em_dirichlet', 'fuzzy_kmeans', 'kl_kmeans']: # use softmaxs as feature vectors
             filepath_support = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone, self.args.T)
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
         
@@ -168,9 +185,10 @@ class Evaluator:
         
         ## If validation mode, report results
         if self.args.used_test_set == 'val': 
-            self.get_method_val_param()
+            #self.get_method_val_param()
+            self.get_method_val_params()
                         
-            path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results_standard/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
 
             if not os.path.exists(path):
@@ -184,7 +202,8 @@ class Evaluator:
                 
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks,
                                                                                     mean_accuracies[0]))
-            f.write(str(self.val_param) + '\t')
+            #f.write(str(self.val_param) + '\t')
+            f.write(str(self.val_param1) + '\t' + str(self.val_param2) + '\t')
             f.write(str(round(100 * mean_accuracies[0], 2)) + '\t' )
             f.write('\n')
             f.close()
@@ -196,7 +215,7 @@ class Evaluator:
             param = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
             param_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
-            path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results_standard/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
 
             if not os.path.exists(path):
@@ -251,6 +270,18 @@ class Evaluator:
             self.val_param = self.args.alpha_value
         elif self.args.name_method == 'PADDLE':
             self.val_param = self.args.lambd
+            
+    def get_method_val_params(self):
+        # fixes for each method the name of the parameter on which validation is performed
+        if self.args.name_method in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET']:
+            self.val_param1 = self.args.T
+            self.val_param2 = self.args.fact
+        elif self.args.name_method == 'ALPHA_TIM':
+            self.val_param1 = self.args.T
+            self.val_param2 = self.args.alpha_value
+        elif self.args.name_method == 'PADDLE':
+            self.val_param1 = self.args.T
+            self.val_param2 = self.args.lambd
 
             
     def set_method_opt_param(self, opt_param):
@@ -262,3 +293,15 @@ class Evaluator:
             self.args.alpha_value = opt_param
         elif self.args.name_method == 'PADDLE':
             self.args.lambd = opt_param
+            
+    def set_method_opt_params(self, opt_param1, opt_param2):
+        # fixes for each method the name of the parameter on which validation is performed
+        if self.args.name_method in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET']:
+            self.args.T = opt_param1
+            self.args.fact = opt_param2
+        elif self.args.name_method == 'ALPHA_TIM':
+            self.args.T = opt_param1
+            self.args.alpha_value = opt_param2
+        elif self.args.name_method == 'PADDLE':
+            self.args.T = opt_param1
+            self.args.lambd = opt_param2
