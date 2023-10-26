@@ -51,15 +51,15 @@ class Evaluator:
         model.eval()
         
         # Define the data loaders
-        #dataset = dataset_list[self.args.dataset](self.args.dataset_path)
-        #train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        dataset = dataset_list[self.args.dataset](self.args.dataset_path)
+        train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
         #val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
-        #test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
 
         # Extract features of query, support and val for all the temperatures (if they do not already exist)
-        #extract_features(model, dataset, test_loader, 'test', self.args, self.device)
+        extract_features(model, dataset, test_loader, 'test', self.args, self.device)
         #extract_features(model, dataset, val_loader, 'val', self.args, self.device)
-        #extract_features(model, dataset, train_loader, 'train', self.args, self.device)
+        extract_features(model, dataset, train_loader, 'train', self.args, self.device)
 
         # Load the features for the given temperature
         if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
@@ -67,24 +67,24 @@ class Evaluator:
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
             
             if self.args.dataset == 'imagenet':
-                path = 'results_standard/val/{}'.format('caltech101')
-                name_file = path + '/{}.txt'.format(self.args.name_method)
+                path = 'results/val/{}'.format('caltech101')
+                name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
                 
             print(" path", path)
             try:
-                #f =  open(name_file, 'r')
-                #list_param, list_acc = [], []
-                #for i, line in enumerate(f):
-                #    if i == 0 :
-                #        continue
-                #    line = line.split('\t')
-                #    list_param.append(int(line[0]))
-                #    list_acc.append(float(line[1]))
-                #list_acc = np.array(list_acc)
-                #index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
-                #opt_param = list_param[index]
+                f =  open(name_file, 'r')
+                list_param, list_acc = [], []
+                for i, line in enumerate(f):
+                    if i == 0 :
+                        continue
+                    line = line.split('\t')
+                    list_param.append(int(line[0]))
+                    list_acc.append(float(line[1]))
+                list_acc = np.array(list_acc)
+                index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
+                opt_param = list_param[index]
         
-                    
+                """
                 f =  open(name_file, 'r')
                 list_param1, list_param2 , list_acc = [], [], []
                 for i, line in enumerate(f):
@@ -99,6 +99,7 @@ class Evaluator:
                 index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
                 opt_param1 = list_param1[index]
                 opt_param2 = list_param2[index]
+                """    
             except:
                 
                 raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")

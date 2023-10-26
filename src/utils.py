@@ -338,11 +338,11 @@ def extract_features(model, dataset, loader, set_name, args,
             Saves the features in data/args.dataset/saved_features/ for T in list_T under the name 
             '{}_softmax_{}_T{}.plk'.format(set_name, args.backbone, T)
     """
-    list_T = [1]
+    list_T = [85, 45, 5]
     for T in list_T:
         # Check if features are already saved
-        #features_save_path = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(args.dataset, set_name, args.backbone, T)
-        features_save_path = 'data/{}/saved_features/{}_{}.plk'.format(args.dataset, set_name, args.backbone)
+        features_save_path = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(args.dataset, set_name, args.backbone, T)
+        #features_save_path = 'data/{}/saved_features/{}_{}.plk'.format(args.dataset, set_name, args.backbone)
         if os.path.exists(features_save_path):
             print('Features already saved for T = {}, skipping'.format(T))
             continue
@@ -363,12 +363,12 @@ def extract_features(model, dataset, loader, set_name, args,
                 image_features /= image_features.norm(dim=-1, keepdim=True)
                 similarity = (T * image_features @ text_features.T).softmax(dim=-1)
                 if i == 0:
-                    #all_features = similarity.cpu()
-                    all_features = image_features
+                    all_features = similarity.cpu()
+                    #all_features = image_features
                     all_labels = labels.cpu()
                 else:
-                    #all_features = torch.cat((all_features, similarity.cpu()), dim=0)
-                    all_features = torch.cat((all_features, image_features), dim=0)
+                    all_features = torch.cat((all_features, similarity.cpu()), dim=0)
+                    #all_features = torch.cat((all_features, image_features), dim=0)
                     all_labels = torch.cat((all_labels, labels.cpu()), dim=0)
 
         # Save features
