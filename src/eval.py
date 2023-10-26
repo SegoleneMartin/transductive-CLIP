@@ -51,15 +51,15 @@ class Evaluator:
         model.eval()
         
         # Define the data loaders
-        dataset = dataset_list[self.args.dataset](self.args.dataset_path)
-        train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        #dataset = dataset_list[self.args.dataset](self.args.dataset_path)
+        #train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
         #val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
-        test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        #test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
 
         # Extract features of query, support and val for all the temperatures (if they do not already exist)
-        extract_features(model, dataset, test_loader, 'test', self.args, self.device)
+        #extract_features(model, dataset, test_loader, 'test', self.args, self.device)
         #extract_features(model, dataset, val_loader, 'val', self.args, self.device)
-        extract_features(model, dataset, train_loader, 'train', self.args, self.device)
+        #extract_features(model, dataset, train_loader, 'train', self.args, self.device)
 
         # Load the features for the given temperature
         if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
@@ -67,7 +67,7 @@ class Evaluator:
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
             
             if self.args.dataset == 'imagenet':
-                path = 'results/val/{}'.format('caltech101')
+                path = 'results_standard/val/{}'.format('caltech101')
                 name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
                 
             print(" path", path)
@@ -103,8 +103,8 @@ class Evaluator:
             except:
                 
                 raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")
-            #self.set_method_opt_param(opt_param)
-            self.set_method_opt_params(opt_param1, opt_param2)
+            self.set_method_opt_param(opt_param)
+            #self.set_method_opt_params(opt_param1, opt_param2)
         
         if self.args.used_test_set == 'val':
             self.args.used_train_set = 'val'
@@ -186,8 +186,8 @@ class Evaluator:
         
         ## If validation mode, report results
         if self.args.used_test_set == 'val': 
-            #self.get_method_val_param()
-            self.get_method_val_params()
+            self.get_method_val_param()
+            #self.get_method_val_params()
                         
             path = 'results_standard/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
@@ -203,8 +203,8 @@ class Evaluator:
                 
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks,
                                                                                     mean_accuracies[0]))
-            #f.write(str(self.val_param) + '\t')
-            f.write(str(self.val_param1) + '\t' + str(self.val_param2) + '\t')
+            f.write(str(self.val_param) + '\t')
+            #f.write(str(self.val_param1) + '\t' + str(self.val_param2) + '\t')
             f.write(str(round(100 * mean_accuracies[0], 2)) + '\t' )
             f.write('\n')
             f.close()
