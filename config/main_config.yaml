@@ -1,8 +1,8 @@
 EVAL:
     dataset: 'eurosat' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
-    method: 'alpha_tim' #'hard_em_dirichlet'  # 'kl_kmeans', 'fuzzy_kmeans', 'fgvcaircraft', 'hard_em_dirichlet', 'clip_linear_probe' 
+    method: 'hard_em_dirichlet' #'hard_em_dirichlet'  # 'kl_kmeans', 'fuzzy_kmeans', 'fgvcaircraft', 'hard_em_dirichlet', 'clip_linear_probe' 
     number_tasks: 1000        # Number of tasks to evaluate
-    batch_size: 1000
+    batch_size: 1
     k_eff: 5                # number of different classes represented in the query
     n_ways : 'full'         # 'full' for all test classes (i.e. K), or integer
     n_query: 75             # number of samples in the query set
@@ -12,6 +12,6 @@ EVAL:
     save_results: False
     used_test_set: 'test'   # 'val' or 'test'
     device: 0
-    T: 4                    # temperature for defining the features
+    T: 50                    # temperature for defining the features
     backbone: 'RN50'        # CLIP's pretrained backbone
     lambd_opt: False        # keep it to this value, will probably be removed soon

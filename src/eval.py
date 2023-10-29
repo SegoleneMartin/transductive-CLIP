@@ -63,11 +63,11 @@ class Evaluator:
 
         # Load the features for the given temperature
         if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
-            path = 'results_standard/val/{}'.format(self.args.dataset)
+            path = 'results/val/{}'.format(self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
             
             if self.args.dataset == 'imagenet':
-                path = 'results_standard/val/{}'.format('caltech101')
+                path = 'results/val/{}'.format('caltech101')
                 name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
                 
             print(" path", path)
@@ -189,7 +189,7 @@ class Evaluator:
             self.get_method_val_param()
             #self.get_method_val_params()
                         
-            path = 'results_standard/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
 
             if not os.path.exists(path):
@@ -216,7 +216,7 @@ class Evaluator:
             param = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
             param_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
-            path = 'results_standard/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
 
             if not os.path.exists(path):
