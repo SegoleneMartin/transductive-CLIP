@@ -120,7 +120,7 @@ class SamplerQuery:
                     pos = torch.randperm(len(complete_possible_samples))[:self.n_query]
                     query = complete_possible_samples[pos]
                     
-                if self.force_query_size == True:
+                if self.force_query_size == False:
                     n_trials += 1
                 query_size = len(query)
                 #print("query_size", query_size)

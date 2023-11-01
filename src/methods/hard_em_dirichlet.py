@@ -127,6 +127,7 @@ class BASE(object):
         query = query.to(self.device).double()
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
+        print("query", query.shape)
         del task_dic
            
         # Run adaptation
