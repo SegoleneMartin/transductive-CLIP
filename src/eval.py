@@ -140,7 +140,7 @@ class Evaluator:
         results_task = []
         for i in range(int(self.args.number_tasks/self.args.batch_size)):
             if (self.args.dataset == 'stanfordcars' or self.args.dataset == 'sun397') and self.args.used_test_set == 'val': # the validation set of stanford cars does not contain enough samples
-                force_query_size = False
+                force_query_size = True
             else:
                 force_query_size = True
 
