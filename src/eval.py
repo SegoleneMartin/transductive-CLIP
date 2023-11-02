@@ -72,40 +72,41 @@ class Evaluator:
                 
             print(" path", path)
             try:
-                f =  open(name_file, 'r')
-                list_param, list_acc = [], []
-                for i, line in enumerate(f):
-                    if i == 0 :
-                        continue
-                    line = line.split('\t')
-                    list_param.append(int(line[0]))
-                    list_acc.append(float(line[1]))
-                list_acc = np.array(list_acc)
-                index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
-                opt_param = list_param[index]
-        
-                """
-                f =  open(name_file, 'r')
-                list_param1, list_param2 , list_acc = [], [], []
-                for i, line in enumerate(f):
-                    if i == 0 :
-                        continue
-                    line = line.split('\t')
-                    list_param1.append(int(line[0]))
-                    list_param2.append(float(line[1]))
-                    list_acc.append(float(line[2]))
+                if self.args.name_method in ['paddle', 'alpha_tim']:
+                    f =  open(name_file, 'r')
+                    list_param1, list_param2 , list_acc = [], [], []
+                    for i, line in enumerate(f):
+                        if i == 0 :
+                            continue
+                        line = line.split('\t')
+                        list_param1.append(int(line[0]))
+                        list_param2.append(float(line[1]))
+                        list_acc.append(float(line[2]))
 
-                list_acc = np.array(list_acc)
-                index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
-                opt_param1 = list_param1[index]
-                opt_param2 = list_param2[index]
-                """    
+                    list_acc = np.array(list_acc)
+                    index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
+                    opt_param1 = list_param1[index]
+                    opt_param2 = list_param2[index]
+                    self.set_method_opt_params(opt_param1, opt_param2)
+                    
+                else:
+                    f =  open(name_file, 'r')
+                    list_param, list_acc = [], []
+                    for i, line in enumerate(f):
+                        if i == 0 :
+                            continue
+                        line = line.split('\t')
+                        list_param.append(int(line[0]))
+                        list_acc.append(float(line[1]))
+                    list_acc = np.array(list_acc)
+                    index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
+                    opt_param = list_param[index]
+                    self.set_method_opt_param(opt_param)
+                
             except:
                 
                 raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")
-            self.set_method_opt_param(opt_param)
-            #self.set_method_opt_params(opt_param1, opt_param2)
-        
+                   
         if self.args.used_test_set == 'val':
             self.args.used_train_set = 'val'
         else:
@@ -186,8 +187,10 @@ class Evaluator:
         
         ## If validation mode, report results
         if self.args.used_test_set == 'val': 
-            self.get_method_val_param()
-            #self.get_method_val_params()
+            if self.args.name_method in ['paddle', 'alpha_tim']:
+                self.get_method_val_params()
+            else:
+                self.get_method_val_param()
                         
             path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
@@ -203,8 +206,11 @@ class Evaluator:
                 
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks,
                                                                                     mean_accuracies[0]))
-            f.write(str(self.val_param) + '\t')
-            #f.write(str(self.val_param1) + '\t' + str(self.val_param2) + '\t')
+            
+            if self.args.name_method in ['paddle', 'alpha_tim']:
+                f.write(str(self.val_param1) + '\t' + str(self.val_param2) + '\t')
+            else:
+                f.write(str(self.val_param) + '\t')
             f.write(str(round(100 * mean_accuracies[0], 2)) + '\t' )
             f.write('\n')
             f.close()
@@ -213,8 +219,8 @@ class Evaluator:
         elif  self.args.used_test_set == 'test' and self.args.save_results == True:
             
             # Report results in .txt files
-            param = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
-            param_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
+            var = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
+            var_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
             path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
@@ -226,11 +232,11 @@ class Evaluator:
                 #print('Adding to already existing .txt file to avoid overwritting')
             else:
                 f = open(name_file, 'w')
-                f.write(param_names +'\t' + '\n')
+                f.write(var_names +'\t' + '\n')
                 
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks,
                                                                                     mean_accuracies[0]))
-            f.write(str(param)+'\t')
+            f.write(str(var)+'\t')
             f.write(str(round(100 * mean_accuracies[0], 1)) +'\t' )
             f.write('\n')
             f.close()

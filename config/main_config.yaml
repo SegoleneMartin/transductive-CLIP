@@ -1,5 +1,5 @@
 EVAL:
-    dataset: 'caltech101' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
+    dataset: 'stanfordcars' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
     method: 'hard_em_dirichlet' #'hard_em_dirichlet'  # 'kl_kmeans', 'fuzzy_kmeans', 'fgvcaircraft', 'hard_em_dirichlet', 'clip_linear_probe' 
     number_tasks: 1000        # Number of tasks to evaluate
     batch_size: 1
