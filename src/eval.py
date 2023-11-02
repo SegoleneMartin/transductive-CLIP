@@ -72,7 +72,7 @@ class Evaluator:
                 
             print(" path", path)
             try:
-                if self.args.name_method in ['paddle', 'alpha_tim']:
+                if self.args.name_method in ['PADDLE', 'ALPHA_TIM']:
                     f =  open(name_file, 'r')
                     list_param1, list_param2 , list_acc = [], [], []
                     for i, line in enumerate(f):
@@ -187,7 +187,9 @@ class Evaluator:
         
         ## If validation mode, report results
         if self.args.used_test_set == 'val': 
-            if self.args.name_method in ['paddle', 'alpha_tim']:
+            print("METHOD", self.args.name_method)
+            if self.args.name_method in ['PADDLE', 'ALPHA_TIM']:
+                print('ENTERED')
                 self.get_method_val_params()
             else:
                 self.get_method_val_param()
@@ -207,7 +209,7 @@ class Evaluator:
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks,
                                                                                     mean_accuracies[0]))
             
-            if self.args.name_method in ['paddle', 'alpha_tim']:
+            if self.args.name_method in ['PADDLE', 'ALPHA_TIM']:
                 f.write(str(self.val_param1) + '\t' + str(self.val_param2) + '\t')
             else:
                 f.write(str(self.val_param) + '\t')
