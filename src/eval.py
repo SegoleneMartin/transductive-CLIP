@@ -64,11 +64,13 @@ class Evaluator:
         # Load the features for the given temperature
         if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
             path = 'results/val/{}'.format(self.args.dataset)
-            name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
+            #name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
+            name_file = path + '/{}_s0.txt'.format(self.args.name_method)
             
             if self.args.dataset == 'imagenet':
                 path = 'results/val/{}'.format('caltech101')
-                name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
+                #name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
+                name_file = path + '/{}_s0.txt'.format(self.args.name_method)
                 
             print(" path", path)
             try:
@@ -76,7 +78,7 @@ class Evaluator:
                     f =  open(name_file, 'r')
                     list_param1, list_param2 , list_acc = [], [], []
                     for i, line in enumerate(f):
-                        if i == 0 :
+                        if i < 5 :
                             continue
                         line = line.split('\t')
                         list_param1.append(int(line[0]))
@@ -93,7 +95,7 @@ class Evaluator:
                     f =  open(name_file, 'r')
                     list_param, list_acc = [], []
                     for i, line in enumerate(f):
-                        if i == 0 :
+                        if i < 5 :
                             continue
                         line = line.split('\t')
                         list_param.append(int(line[0]))
@@ -224,7 +226,7 @@ class Evaluator:
             var = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
             var_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
-            path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results_T0_bis/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
 
             if not os.path.exists(path):
