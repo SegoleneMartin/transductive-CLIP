@@ -38,7 +38,10 @@ class BASE(object):
         """
         l1 = torch.lgamma(self.alpha.sum(-1)).unsqueeze(1)
         l2 = - torch.lgamma(self.alpha).sum(-1).unsqueeze(1)
-        l3 = ((self.alpha.unsqueeze(1) - 1) * torch.log(samples + self.eps).unsqueeze(2)).sum(-1)
+        if self.args.shots == 0:
+            l3 = ((self.alpha.unsqueeze(1) - 1) * torch.log(samples + self.eps).unsqueeze(2)).sum(-1)
+        else:
+            l3 = ((self.alpha.unsqueeze(1) - 1) * samples.unsqueeze(2)).sum(-1)
         logits = l1 + l2 + l3
         return - logits  # N x n x K
     
@@ -124,11 +127,13 @@ class BASE(object):
         query = task_dic['x_q']             # [n_task, n_query, feature_dim]
 
         # Transfer tensors to GPU if needed
-        support = support.to(self.device).double()
-        query = query.to(self.device).double()
+        support = support.to(self.device).float()
+        query = query.to(self.device).float()
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
+        
+        print('OK UNITIL HERE')
            
         # Run adaptation
         self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
@@ -203,12 +208,11 @@ class EM_DIRICHLET(BASE):
 
     def update_alpha(self, alpha_0, y_cst):
         alpha = deepcopy(alpha_0)
-        cst = - y_cst
         
         for l in range(self.iter_mm):
             curv, digam = self.curvature(alpha)
             b = digam - torch.polygamma(0, alpha.sum(-1)).unsqueeze(-1) - curv * alpha 
-            b = b + cst
+            b = b - y_cst
             a = curv
             delta = b**2 + 4 * a
             alpha_new = (- b + torch.sqrt(delta)) / (2 * a)
@@ -221,25 +225,6 @@ class EM_DIRICHLET(BASE):
                     break
             alpha = deepcopy(alpha_new)            
         self.alpha = deepcopy(alpha_new)
-        
-
-    def objective_function(self, support, query, y_s_one_hot):
-        l1 = torch.lgamma(self.alpha.sum(-1)).unsqueeze(1)
-        l2 = - torch.lgamma(self.alpha).sum(-1).unsqueeze(1)
-        l3 = ((self.alpha.unsqueeze(1) - 1) * torch.log(query + self.eps).unsqueeze(2)).sum(-1)
-        datafit_query = -(self.u * (l1 + l2 + l3)).sum(-1).sum(1)
-        l1 = torch.lgamma(self.alpha.sum(-1)).unsqueeze(1)
-        l2 = - torch.lgamma(self.alpha).sum(-1).unsqueeze(1)
-        l3 = ((self.alpha.unsqueeze(1) - 1) * torch.log(support + self.eps).unsqueeze(2)).sum(-1)
-        datafit_support = -(y_s_one_hot * (l1 + l2 + l3)).sum(-1).sum(1)
-        datafit = 1 / 2 * (datafit_query + datafit_support)
-        
-        reg_ent = (self.u * torch.log(self.u + self.eps)).sum(-1).sum(1)
-        
-        props = self.u.mean(1)
-        part_complexity = - self.lambd * (props * torch.log(props + self.eps)).sum(-1)
-        
-        return datafit + reg_ent + part_complexity
     
 
     def run_method(self, support, query, y_s, y_q):
@@ -261,8 +246,8 @@ class EM_DIRICHLET(BASE):
         
         y_s_one_hot = get_one_hot(y_s)
         n_task, n_support, n_ways = y_s_one_hot.shape
-        self.zero_value = torch.polygamma(1, torch.Tensor([1]).to(self.device)).double()
-        self.log_gamma_1 = torch.lgamma(torch.Tensor([1]).to(self.device)).double() 
+        self.zero_value = torch.polygamma(1, torch.Tensor([1]).to(self.device)).float() #.double()
+        self.log_gamma_1 = torch.lgamma(torch.Tensor([1]).to(self.device)).float() 
 
         # Initialization
         self.u = deepcopy(query) # initialize u to the probabilities given by CLIP
@@ -272,12 +257,18 @@ class EM_DIRICHLET(BASE):
         alpha_old = deepcopy(self.alpha)
         t0 = time.time()
         
+        if self.args.shots != 0:  # inplace operations to save memory
+            support.add_(self.eps)
+            query.add_(self.eps)
+            support.log_()
+            query.log_()
+        
         pbar = tqdm(range(self.iter))
         for i in pbar:
 
             # update of dirichlet parameter alpha
             if self.args.shots == 0: # in this case, avoid errors du to possibly empty clusters by estimating alpha only for non empty clusters
-                cluster_sizes = self.u.sum(dim=1).unsqueeze(-1).double() # N x K  
+                cluster_sizes = self.u.sum(dim=1).unsqueeze(-1).float()#.double() # N x K  
                 nonzero_clusters = cluster_sizes > self.eps
                 y_cst = ((self.u.unsqueeze(-1) * torch.log(query + self.eps).unsqueeze(2)).sum(1)) / (self.u.sum(1).clamp(min=self.eps).unsqueeze(-1))
                 y_cst = y_cst * nonzero_clusters + (1 - 1*nonzero_clusters) * torch.ones_like(y_cst) * (-10)
@@ -287,7 +278,11 @@ class EM_DIRICHLET(BASE):
                 del alpha_new
                 
             else:
-                y_cst = 1 / (y_s_one_hot.sum(1) + self.u.sum(1)).unsqueeze(-1) * ((y_s_one_hot.unsqueeze(-1) * torch.log(support +self.eps).unsqueeze(2)).sum(1) + (self.u.unsqueeze(-1) * torch.log(query + self.eps).unsqueeze(2)).sum(1))
+                y_s_sum = y_s_one_hot.sum(dim=1)  # Shape [n_task, num_class]
+                u_sum = self.u.sum(dim=1) 
+                y_cst = (1 / (y_s_sum + u_sum)).unsqueeze(-1)
+                y_cst = y_cst * ((y_s_one_hot.unsqueeze(-1) * support.unsqueeze(2)).sum(dim=1) + (self.u.unsqueeze(-1) * query.unsqueeze(2)).sum(dim=1))
+                #y_cst = 1 / (y_s_one_hot.sum(1) + self.u.sum(1)).unsqueeze(-1) * ((y_s_one_hot.unsqueeze(-1) * torch.log(support +self.eps).unsqueeze(2)).sum(1) + (self.u.unsqueeze(-1) * torch.log(query + self.eps).unsqueeze(2)).sum(1))
                 self.update_alpha(self.alpha, y_cst)
             
             # update on dual variable v
