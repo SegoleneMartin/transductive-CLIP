@@ -78,7 +78,7 @@ class Evaluator:
                     f =  open(name_file, 'r')
                     list_param1, list_param2 , list_acc = [], [], []
                     for i, line in enumerate(f):
-                        if i < 5 :
+                        if i < 1 :
                             continue
                         line = line.split('\t')
                         list_param1.append(int(line[0]))
