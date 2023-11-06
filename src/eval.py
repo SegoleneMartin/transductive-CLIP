@@ -63,6 +63,7 @@ class Evaluator:
 
         # Load the features for the given temperature
         if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
+                
             path = 'results/val/{}'.format(self.args.dataset)
             #name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
             name_file = path + '/{}_s0.txt'.format(self.args.name_method)
@@ -104,6 +105,8 @@ class Evaluator:
                     index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
                     opt_param = list_param[index]
                     self.set_method_opt_param(opt_param)
+                    if self.args.fixed_T == True:
+                        self.args.T = 10
                 
             except:
                 
@@ -226,7 +229,7 @@ class Evaluator:
             var = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
             var_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
-            path = 'results_T0_bis/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results_T_fixed/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
 
             if not os.path.exists(path):

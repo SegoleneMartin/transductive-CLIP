@@ -132,9 +132,7 @@ class BASE(object):
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
-        
-        print('OK UNITIL HERE')
-           
+                   
         # Run adaptation
         self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
 
