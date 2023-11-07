@@ -131,6 +131,7 @@ class BASE(object):
         query = query.to(self.device).float()
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
+        print("query", query.shape)
         del task_dic
                    
         # Run adaptation
@@ -299,7 +300,8 @@ class EM_DIRICHLET(BASE):
                 pbar.set_description(f"Criterion: {criterions}")
                 self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
                 t1 = time.time()
-
+            
+            #print('u', self.u)
         t1 = time.time()
         self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
         if self.args.acc_clustering == True:

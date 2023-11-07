@@ -5,6 +5,7 @@ from src.methods.fuzzy_kmeans import FUZZY_KMEANS
 from src.methods.kl_kmeans import KL_KMEANS
 from src.methods.em_dirichlet import EM_DIRICHLET
 from src.methods.paddle import PADDLE
+from src.methods.soft_km import SOFT_KM
 from src.methods.tim import ALPHA_TIM, TIM_GD
 from src.methods.hard_em_dirichlet import HARD_EM_DIRICHLET
 from src.methods.clip_inductive import CLIP
@@ -62,7 +63,7 @@ class Evaluator:
         #extract_features(model, dataset, train_loader, 'train', self.args, self.device)
 
         # Load the features for the given temperature
-        if self.args.used_test_set == 'test':  # if the inference is on the test set, set the temperature to the optimal one found during validation
+        if self.args.used_test_set == 'test' and self.args.shots > 0:  # if the inference is on the test set, set the temperature to the optimal one found during validation
                 
             path = 'results/val/{}'.format(self.args.dataset)
             #name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
@@ -105,26 +106,25 @@ class Evaluator:
                     index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
                     opt_param = list_param[index]
                     self.set_method_opt_param(opt_param)
-                    if self.args.fixed_T == True:
-                        self.args.T = 10
                 
             except:
                 
                 raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")
+        else:
+            self.args.T = 15
                    
         if self.args.used_test_set == 'val':
             self.args.used_train_set = 'val'
         else:
             self.args.used_train_set = 'train'
 
-        #if self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'fuzzy_kmeans', 'kl_kmeans']: # use softmaxs as feature vectors
-        if self.args.method in ['paddle', 'alpha_tim', 'em_dirichlet', 'hard_em_dirichlet', 'fuzzy_kmeans', 'kl_kmeans']: # use softmaxs as feature vectors
+        if use_softmax_feature == True:
             filepath_support = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone, self.args.T)
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
-        
-        else : # use image embeddings as feature vectors
+        else:
             filepath_support = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone)
             filepath_query = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
+
 
         extracted_features_dic_support = load_pickle(filepath_support)
         extracted_features_dic_query = load_pickle(filepath_query)
@@ -133,6 +133,14 @@ class Evaluator:
         all_labels_support = extracted_features_dic_support['concat_labels'].long().to('cpu')
         all_features_query = extracted_features_dic_query['concat_features'].to('cpu')
         all_labels_query = extracted_features_dic_query['concat_labels'].long().to('cpu')
+        
+        N_tot = len(all_features_query)
+        k_eff_min = int(0.05 * self.args.n_query)
+        k_eff_max = int(0.2 * self.args.n_query)
+        self.args.k_eff = int(self.args.num_classes_test * self.args.n_query / N_tot)
+        self.args.k_eff = max(k_eff_min, self.args.k_eff)
+        self.args.k_eff = min(k_eff_max, self.args.k_eff)
+        print("k_eff = ", self.args.k_eff)
     
         self.logger.info("=> Runnning full evaluation with method: {}".format(self.args.name_method))
 
@@ -266,6 +274,8 @@ class Evaluator:
             method_builder = HARD_EM_DIRICHLET(**method_info)
         elif self.args.name_method == 'PADDLE':
             method_builder = PADDLE(**method_info)
+        elif self.args.name_method == 'SOFT_KM':
+            method_builder = SOFT_KM(**method_info)
         elif self.args.name_method == 'ALPHA_TIM':
             method_builder = ALPHA_TIM(**method_info)
         elif self.args.name_method == 'CLIP_LINEAR_PROBE':

@@ -19,7 +19,6 @@ class BASE(object):
         self.init_info_lists()
         self.args = args
         self.eps = 1e-15
-        self.lambd = args.n_query #args.lambd
 
 
     def init_info_lists(self):
@@ -114,9 +113,9 @@ class BASE(object):
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
-        
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        support, query, scale, ratio = scaler(support, query)
+
+        #scaler = MinMaxScaler(feature_range=(0, 1))
+        #support, query, scale, ratio = scaler(support, query)
            
         # Run adaptation
         self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
@@ -126,7 +125,7 @@ class BASE(object):
         return logs
 
 
-class PADDLE(BASE):
+class SOFT_KM(BASE):
 
     def __init__(self, model, device, log_file, args):
         super().__init__(model=model, device=device, log_file=log_file, args=args)
@@ -146,30 +145,6 @@ class PADDLE(BASE):
         logits = (diff.square_()).sum(dim=-1)
         return - 1 / 2 * logits  # N x n x K
 
-    def A(self, p):
-        """
-        inputs:
-
-            p : torch.tensor of shape [n_tasks, q_shot, num_class]
-                where p[i,j,k] = probability of point j in task i belonging to class k
-                (according to our L2 classifier)
-        returns:
-            v : torch.Tensor of shape [n_task, q_shot, num_class]
-        """
-        n_samples = p.size(1)
-        v = p.sum(1) / n_samples
-        return v
-
-    def A_adj(self, v, q_shot):
-        """
-        inputs:
-            V : torch.tensor of shape [n_tasks, num_class]
-            q_shot : int
-        returns:
-            p : torch.Tensor of shape [n_task, q_shot, num_class]
-        """
-        p = v.unsqueeze(1).repeat(1, q_shot, 1) / q_shot
-        return p
     
     def u_update(self, query):
         """
@@ -181,7 +156,7 @@ class PADDLE(BASE):
         """
         feature_size, n_query = query.size(-1), query.size(1)
         logits = self.get_logits(query)
-        self.u = (logits + self.lambd * self.A_adj(self.v, n_query)).softmax(2)
+        self.u = (logits).softmax(2)
 
     def v_update(self):
         """
@@ -226,7 +201,7 @@ class PADDLE(BASE):
             den  = self.u.sum(1).clamp(min=self.eps)
             cluster_sizes = self.u.sum(1).unsqueeze(-1)
             nonzero_clusters = cluster_sizes > self.eps
-            self.w = num.div_(den.unsqueeze(2)) * nonzero_clusters
+            self.w = num.div_(den.unsqueeze(2)) * nonzero_clusters 
 
     def run_method(self, support, query, y_s, y_q):
         """
@@ -242,12 +217,11 @@ class PADDLE(BASE):
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]     (centroids)
         """
 
-        self.logger.info(" ==> Executing PADDLE with LAMBDA = {}".format(self.lambd))
+        self.logger.info(" ==> Executing SOFT K-MEANS with T = {}".format(self.args.T))
         
         y_s_one_hot = get_one_hot(y_s)
         n_task, n_support, n_ways = y_s_one_hot.shape
         
-        self.v = torch.zeros(n_task, n_ways).to(self.device)
         self.init_w(support, y_s_one_hot)
 
         pbar = tqdm(range(self.iter))
@@ -256,9 +230,6 @@ class PADDLE(BASE):
 
             # Update assignments
             self.u_update(query)
-
-            # update on dual variable v
-            self.v_update()
 
             # Update centroids by averaging the assigned samples
             self.w_update(support, query, y_s_one_hot)
@@ -271,7 +242,7 @@ class PADDLE(BASE):
                 pbar.set_description(f"Criterion: {criterions}")
                 self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
                 t1 = time.time()
-
+            print("u", self.u)
         t1 = time.time()
         self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
         if self.args.acc_clustering == True:

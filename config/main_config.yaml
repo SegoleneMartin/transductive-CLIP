@@ -1,13 +1,13 @@
 EVAL:
-    dataset: 'imagenet' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
+    dataset: 'stanfordcars' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
     method: 'hard_em_dirichlet' #'hard_em_dirichlet'  # 'kl_kmeans', 'fuzzy_kmeans', 'fgvcaircraft', 'hard_em_dirichlet', 'clip_linear_probe' 
-    number_tasks: 1        # Number of tasks to evaluate
-    batch_size: 1
+    number_tasks: 1000        # Number of tasks to evaluate
+    batch_size: 500
     k_eff: 5                # number of different classes represented in the query
     n_ways : 'full'         # 'full' for all test classes (i.e. K), or integer
-    n_query: 75             # number of samples in the query set
+    n_query: 150            # number of samples in the query set
     sampling: 'uniform'     # ('balanced' | 'uniform') sampling of the query
-    shots: 16              # number of shots
+    shots: 0              # number of shots
     log_path: '.log/'
     save_results: False
     used_test_set: 'test'   # 'val' or 'test'
@@ -15,4 +15,4 @@ EVAL:
     T: 5                    # temperature for defining the features
     backbone: 'RN50'        # CLIP's pretrained backbone
     lambd_opt: False        # keep it to this value, will probably be removed soon
-    fixed_T: True
+    use_softmax_feature: True
