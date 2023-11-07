@@ -118,7 +118,7 @@ class Evaluator:
         else:
             self.args.used_train_set = 'train'
 
-        if use_softmax_feature == True:
+        if self.args.use_softmax_feature == True:
             filepath_support = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone, self.args.T)
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
         else:
@@ -134,12 +134,13 @@ class Evaluator:
         all_features_query = extracted_features_dic_query['concat_features'].to('cpu')
         all_labels_query = extracted_features_dic_query['concat_labels'].long().to('cpu')
         
-        N_tot = len(all_features_query)
-        k_eff_min = int(0.05 * self.args.n_query)
-        k_eff_max = int(0.2 * self.args.n_query)
-        self.args.k_eff = int(self.args.num_classes_test * self.args.n_query / N_tot)
-        self.args.k_eff = max(k_eff_min, self.args.k_eff)
-        self.args.k_eff = min(k_eff_max, self.args.k_eff)
+        #N_tot = len(all_features_query)
+        #k_eff_min = int(0.05 * self.args.n_query)
+        #k_eff_max = int(0.2 * self.args.n_query)
+        #print(N_tot, k_eff_min, k_eff_max, int(self.args.num_classes_test * self.args.n_query / N_tot))
+         #int(self.args.num_classes_test * self.args.n_query / N_tot)
+        #self.args.k_eff = max(k_eff_min, self.args.k_eff)
+        #self.args.k_eff = min(k_eff_max, self.args.k_eff)
         print("k_eff = ", self.args.k_eff)
     
         self.logger.info("=> Runnning full evaluation with method: {}".format(self.args.name_method))
@@ -237,7 +238,7 @@ class Evaluator:
             var = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
             var_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
-            path = 'results_T_fixed/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results_T_fixed_keff_auto/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
 
             if not os.path.exists(path):

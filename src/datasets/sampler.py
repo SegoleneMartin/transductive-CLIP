@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import math
+import random
 
 class CategoriesSampler():
     """
@@ -96,7 +97,8 @@ class SamplerQuery:
 
     def __iter__(self):
         for i_batch in range(self.n_batch):
-
+            self.k_eff = random.randint(3, 10)
+            #print('k_eff', self.k_eff)
             query_size = 0
             n_trials = 0
             while query_size < self.n_query and n_trials < 1:

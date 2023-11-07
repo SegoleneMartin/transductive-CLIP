@@ -1,11 +1,11 @@
 EVAL:
-    dataset: 'stanfordcars' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
+    dataset: 'caltech101' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
     method: 'hard_em_dirichlet' #'hard_em_dirichlet'  # 'kl_kmeans', 'fuzzy_kmeans', 'fgvcaircraft', 'hard_em_dirichlet', 'clip_linear_probe' 
     number_tasks: 1000        # Number of tasks to evaluate
-    batch_size: 500
+    batch_size: 1000
     k_eff: 5                # number of different classes represented in the query
     n_ways : 'full'         # 'full' for all test classes (i.e. K), or integer
-    n_query: 150            # number of samples in the query set
+    n_query: 75            # number of samples in the query set
     sampling: 'uniform'     # ('balanced' | 'uniform') sampling of the query
     shots: 0              # number of shots
     log_path: '.log/'
