@@ -4,9 +4,7 @@ import torch
 import time
 from copy import deepcopy
 import numpy as np
-from scipy.sparse.csgraph import min_weight_full_bipartite_matching
-from scipy.sparse import csr_matrix
-from scipy.optimize import linear_sum_assignment
+from .. import utils
 
 class BASE(object):
 
@@ -64,45 +62,27 @@ class BASE(object):
         preds_q = self.u.argmax(2)
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
-
+        
+        
     def compute_acc_clustering(self, query, y_q, support, y_s_one_hot):
         n_task = query.shape[0]
         preds_q = self.u.argmax(2)
-        preds_q_one_hot = get_one_hot_full(preds_q, self.args.num_classes_test)
-        new_preds_q = torch.zeros_like(y_q)
-        
-        if self.args.shots == 0:
-            prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1).clamp(min=self.eps).unsqueeze(-1))
-            cluster_sizes = preds_q_one_hot.sum(1).unsqueeze(-1) # N x K
-            nonzero_clusters = cluster_sizes > self.eps
-            prototypes = prototypes * nonzero_clusters 
-            #prototypes = self.alpha
-        else:
-            prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1) + (y_s_one_hot.unsqueeze(-1) * support.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1) + y_s_one_hot.sum(1)).unsqueeze(-1)
+        preds_q_one_hot = get_one_hot_full(preds_q, self.args.n_ways)
 
-        list_clusters = []
-        list_A = []
-        for task in range(n_task):
-            clusters = []
-            num_clusters = len(torch.unique(preds_q[task]))
-            A = np.zeros((num_clusters, int(self.args.n_ways)))
-            for i, cluster in enumerate(preds_q[task]):
-                if cluster.item() not in clusters:
-                    A[len(clusters), :] = - prototypes[task, cluster].cpu().numpy()
-                    clusters.append(cluster.item())
-            list_A.append(A)
-            list_clusters.append(clusters)
+        prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1).clamp(min=self.eps).unsqueeze(-1))
+        cluster_sizes = preds_q_one_hot.sum(1).unsqueeze(-1) # N x K
+        nonzero_clusters = cluster_sizes > self.eps
+        prototypes = prototypes * nonzero_clusters 
         
-        for task in range(n_task):
-            A = list_A[task]
-            clusters = list_clusters[task]
-            #__, matching_classes = min_weight_full_bipartite_matching(csr_matrix(A), maximize=False)
-            __, matching_classes = linear_sum_assignment(A, maximize=False)
-            for i, cluster in enumerate(preds_q[task]):
-                new_preds_q[task, i] = matching_classes[clusters.index(cluster)]
-     
+        if self.args.graph_matching == True:
+            new_preds_q = utils.compute_graph_matching(preds_q, prototypes, self.args)
+                
+        else:
+            new_preds_q = utils.compute_basic_matching(preds_q, prototypes, self.args)
+
         accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
+        
         
     
     def get_logs(self):

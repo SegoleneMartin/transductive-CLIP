@@ -33,12 +33,14 @@ class Tasks_Generator:
             new_labels_support[labels_support == y] = j 
             new_labels_query[labels_query == y] = j 
                 
-        if self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'fuzzy_kmeans', 'kl_kmeans']:
+        if self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'kl_kmeans']:
             new_data_query = data_query[:, unique_labels]
             new_data_support = data_support[:, unique_labels]
         else:
             new_data_query = data_query
             new_data_support = data_support
+            new_labels_support = labels_support
+            new_labels_query = labels_query
             
         torch.cuda.empty_cache()
 

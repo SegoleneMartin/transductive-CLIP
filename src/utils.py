@@ -16,6 +16,7 @@ import requests
 import torch.nn as nn
 from IPython.display import Image, display
 from PIL import Image as pimage
+from scipy.optimize import linear_sum_assignment
 import clip  # pylint: disable=import-outside-toplevel
 
 def get_one_hot(y_s):
@@ -338,7 +339,7 @@ def extract_features(model, dataset, loader, set_name, args,
             Saves the features in data/args.dataset/saved_features/ for T in list_T under the name 
             '{}_softmax_{}_T{}.plk'.format(set_name, args.backbone, T)
     """
-    list_T = [15, 25, 2]
+    list_T = [30]
     for T in list_T:
         # Check if features are already saved
         features_save_path = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(args.dataset, set_name, args.backbone, T)
@@ -397,5 +398,41 @@ def clip_weights(model, classnames, template, device):
 
 
 
+def compute_graph_matching(preds_q, probs, args):
+        
+        new_preds_q = torch.zeros_like(preds_q)
+        n_task = preds_q.shape[0]
+        list_clusters = []
+        list_A = []
+        
+        for task in range(n_task):
+            clusters = []
+            num_clusters = len(torch.unique(preds_q[task]))
+            A = np.zeros((num_clusters, int(args.n_ways)))
+            for i, cluster in enumerate(preds_q[task]):
+                if cluster.item() not in clusters:
+                    A[len(clusters), :] = - probs[task, cluster].cpu().numpy()
+                    clusters.append(cluster.item())
+            list_A.append(A)
+            list_clusters.append(clusters)
 
+        for task in range(n_task):
+            A = list_A[task]
+            clusters = list_clusters[task]
+            __, matching_classes = linear_sum_assignment(A, maximize=False)
+            for i, cluster in enumerate(preds_q[task]):
+                new_preds_q[task, i] = matching_classes[clusters.index(cluster)]
+        
+        return new_preds_q
+        
 
+def compute_basic_matching(preds_q, probs, args):
+    
+    new_preds_q = torch.zeros_like(preds_q)
+    n_task = preds_q.shape[0]
+    
+    for task in range(n_task):
+        matching_classes = probs[task].argmax(dim=-1) # K
+        new_preds_q[task] = matching_classes[preds_q[task]]
+        
+    return new_preds_q

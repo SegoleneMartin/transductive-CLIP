@@ -5,3 +5,4 @@ METHOD:
   iter_mm: 1000
   acc_clustering: True
   fact: 1.0
+  graph_matching: True

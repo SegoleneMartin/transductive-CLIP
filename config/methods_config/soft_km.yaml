@@ -1,4 +1,0 @@
-METHOD:
-  name_method: 'SOFT_KM'
-  iter: 20
-  acc_clustering: False

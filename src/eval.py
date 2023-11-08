@@ -4,11 +4,14 @@ from src.utils import compute_confidence_interval, Logger
 from src.methods.fuzzy_kmeans import FUZZY_KMEANS
 from src.methods.kl_kmeans import KL_KMEANS
 from src.methods.em_dirichlet import EM_DIRICHLET
+from src.methods.em_gaussian import EM_GAUSSIAN
+from src.methods.em_gaussian_cov import EM_GAUSSIAN_COV
 from src.methods.paddle import PADDLE
-from src.methods.soft_km import SOFT_KM
+from src.methods.soft_kmeans import SOFT_KMEANS
+from src.methods.hard_kmeans import HARD_KMEANS
 from src.methods.tim import ALPHA_TIM, TIM_GD
 from src.methods.hard_em_dirichlet import HARD_EM_DIRICHLET
-from src.methods.clip_inductive import CLIP
+from src.methods.inductive_clip import CLIP
 from src.methods.clip_linear_probe import CLIP_LINEAR_PROBE
 from src.datasets import Tasks_Generator, SamplerSupport, SamplerQuery, CategoriesSampler, build_data_loader
 from src.datasets import OxfordPets, EuroSAT, UCF101, Caltech101, DescribableTextures, FGVCAircraft, Food101, Flowers102, StanfordCars, ImageNet, SUN397
@@ -52,7 +55,9 @@ class Evaluator:
         model.eval()
         
         # Define the data loaders
-        #dataset = dataset_list[self.args.dataset](self.args.dataset_path)
+        dataset = dataset_list[self.args.dataset](self.args.dataset_path)
+        self.args.classnames = dataset.classnames
+        self.args.template = dataset.template
         #train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
         #val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
         #test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
@@ -111,7 +116,7 @@ class Evaluator:
                 
                 raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")
         else:
-            self.args.T = 15
+            self.args.T = 30
                    
         if self.args.used_test_set == 'val':
             self.args.used_train_set = 'val'
@@ -275,12 +280,20 @@ class Evaluator:
             method_builder = HARD_EM_DIRICHLET(**method_info)
         elif self.args.name_method == 'PADDLE':
             method_builder = PADDLE(**method_info)
-        elif self.args.name_method == 'SOFT_KM':
-            method_builder = SOFT_KM(**method_info)
+        elif self.args.name_method == 'EM_GAUSSIAN':
+            method_builder = EM_GAUSSIAN(**method_info)
+        elif self.args.name_method == 'EM_GAUSSIAN_COV':
+            method_builder = EM_GAUSSIAN_COV(**method_info)
+        elif self.args.name_method == 'SOFT_KMEANS':
+            method_builder = SOFT_KMEANS(**method_info)
+        elif self.args.name_method == 'HARD_KMEANS':
+            method_builder = HARD_KMEANS(**method_info)
         elif self.args.name_method == 'ALPHA_TIM':
             method_builder = ALPHA_TIM(**method_info)
         elif self.args.name_method == 'CLIP_LINEAR_PROBE':
             method_builder = CLIP_LINEAR_PROBE(**method_info)
+        elif self.args.name_method == 'CLIP':
+            method_builder = CLIP(**method_info)
         else:
             self.logger.exception("Method must be in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET', 'CLIP_LINEAR_PROBE']")
             raise ValueError("Method must be in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET', 'CLIP_LINEAR_PROBE']")

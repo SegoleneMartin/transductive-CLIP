@@ -1,5 +1,5 @@
 METHOD:
-  name_method: 'FUZZY_KMEANS'
-  iter: 10
+  name_method: 'SOFT_KMEANS'
+  iter: 20
   acc_clustering: True
   graph_matching: True

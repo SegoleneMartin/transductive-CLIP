@@ -53,6 +53,7 @@ class BASE(object):
         """
 
         preds_q = self.u.argmax(2)
+        print(preds_q)
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
 
@@ -118,7 +119,7 @@ class BASE(object):
         return logs
 
 
-class FUZZY_KMEANS(BASE):
+class HARD_KMEANS(BASE):
 
     def __init__(self, model, device, log_file, args):
         super().__init__(model=model, device=device, log_file=log_file, args=args)
@@ -136,10 +137,9 @@ class FUZZY_KMEANS(BASE):
             self.u : torch.Tensor of shape [n_task, n_query, num_class]
         """
         logits = self.get_logits(query) # [n_task, n_query, num_class]
-        sum_logits = (1/(logits + self.eps)).sum(-1).unsqueeze(-1)
-        self.u = 1 / (logits * sum_logits + self.eps)
+        self.u = logits.softmax(2)
         
-
+        
     def w_update(self, support, query, y_s_one_hot):
         """
         Corresponds to w_k updates
@@ -152,9 +152,11 @@ class FUZZY_KMEANS(BASE):
         updates :
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
         """
-        num = (query.unsqueeze(2) * self.u.unsqueeze(3)**2).sum(1)
-        den  = (self.u**2).sum(1).clamp(self.eps)
-        self.w = num.div_(den.unsqueeze(2)) 
+        num = (query.unsqueeze(2) * self.u.unsqueeze(3)).sum(1)
+        den  = self.u.sum(1).clamp(min=self.eps)
+        cluster_sizes = self.u.sum(1).unsqueeze(-1)
+        nonzero_clusters = cluster_sizes > self.eps
+        self.w = num.div_(den.unsqueeze(2)) * nonzero_clusters 
 
      
     def run_method(self, support, query, y_s, y_q):
@@ -172,7 +174,7 @@ class FUZZY_KMEANS(BASE):
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]     (centroids)
         """
 
-        self.logger.info(" ==> Executing FUZZY_KMEANS with T = {}".format(self.args.T))
+        self.logger.info(" ==> Executing HARD_KMEANS with T = {}".format(self.args.T))
         
         y_s_one_hot = get_one_hot(y_s)
         n_task, n_support, n_ways = y_s_one_hot.shape
@@ -195,6 +197,9 @@ class FUZZY_KMEANS(BASE):
 
             # update assignments
             self.u_update(query)
+            labels = torch.argmin(self.u, dim=-1)
+            self.u.zero_()
+            self.u.scatter_(2, labels.unsqueeze(-1), 1.0)
 
             criterions = (u_old - self.u).norm(dim=(1,2)).mean(0) 
             t1 = time.time()
@@ -210,4 +215,4 @@ class FUZZY_KMEANS(BASE):
             self.compute_acc_clustering(query, y_q, support, y_s_one_hot)
         else:
             self.compute_acc(y_q=y_q)
-        
+

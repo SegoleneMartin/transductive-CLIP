@@ -17,25 +17,14 @@ class BASE(object):
         self.init_info_lists()
         self.args = args
         self.eps = 1e-15
+        self.lambd = args.n_query #int(args.num_classes_test / 5) * args.n_query
 
 
     def init_info_lists(self):
         self.timestamps = []
         self.criterions = []
         self.test_acc = []
-    
-    
-    def get_logits(self, samples):
-        """
-        inputs:
-            samples : torch.Tensor of shape [n_task, shot, feature_dim]
-        returns :
-            logits : torch.Tensor of shape [n_task, shot, num_class]
-        """
-        diff = self.w.unsqueeze(1) - samples.unsqueeze(2)  # N x n x K x C
-        logits = (diff.square_()).sum(dim=-1)
-        return logits  # N x n x K
-    
+
 
     def record_convergence(self, new_time, criterions):
         """
@@ -45,7 +34,8 @@ class BASE(object):
         """
         self.criterions.append(criterions)
         self.timestamps.append(new_time)
-    
+
+
     def compute_acc(self, y_q):
         """
         inputs:
@@ -82,7 +72,7 @@ class BASE(object):
         accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
         
-    
+
     def get_logs(self):
         self.criterions = torch.stack(self.criterions, dim=0).cpu().numpy()
         self.test_acc = torch.cat(self.test_acc, dim=1).cpu().numpy()
@@ -109,7 +99,7 @@ class BASE(object):
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
-           
+        
         # Run adaptation
         self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
 
@@ -118,15 +108,51 @@ class BASE(object):
         return logs
 
 
-class FUZZY_KMEANS(BASE):
+class EM_GAUSSIAN(BASE):
 
     def __init__(self, model, device, log_file, args):
         super().__init__(model=model, device=device, log_file=log_file, args=args)
 
+
     def __del__(self):
         self.logger.del_logger()
-    
+     
+    def get_logits(self, samples):
+        """
+        inputs:
+            samples : torch.Tensor of shape [n_task, shot, feature_dim]
+        returns :
+            logits : torch.Tensor of shape [n_task, shot, num_class]
+        """
+        diff = self.w.unsqueeze(1) - samples.unsqueeze(2)  # N x n x K x C
+        logits = (diff.square_()).sum(dim=-1)
+        return - 1 / 2 * logits  # N x n x K
 
+    def A(self, p):
+        """
+        inputs:
+
+            p : torch.tensor of shape [n_tasks, q_shot, num_class]
+                where p[i,j,k] = probability of point j in task i belonging to class k
+                (according to our L2 classifier)
+        returns:
+            v : torch.Tensor of shape [n_task, q_shot, num_class]
+        """
+        n_samples = p.size(1)
+        v = p.sum(1) / n_samples
+        return v
+
+    def A_adj(self, v, q_shot):
+        """
+        inputs:
+            V : torch.tensor of shape [n_tasks, num_class]
+            q_shot : int
+        returns:
+            p : torch.Tensor of shape [n_task, q_shot, num_class]
+        """
+        p = v.unsqueeze(1).repeat(1, q_shot, 1) / q_shot
+        return p
+    
     def u_update(self, query):
         """
         inputs:
@@ -135,10 +161,17 @@ class FUZZY_KMEANS(BASE):
         updates:
             self.u : torch.Tensor of shape [n_task, n_query, num_class]
         """
-        logits = self.get_logits(query) # [n_task, n_query, num_class]
-        sum_logits = (1/(logits + self.eps)).sum(-1).unsqueeze(-1)
-        self.u = 1 / (logits * sum_logits + self.eps)
-        
+        feature_size, n_query = query.size(-1), query.size(1)
+        logits = self.get_logits(query)
+        #self.u = (self.args.T * (logits + self.lambd * self.A_adj(self.v, n_query))).softmax(2)
+        self.u = ( (logits + self.lambd * self.A_adj(self.v, n_query))).softmax(2)
+
+    def v_update(self):
+        """
+        inputs:
+        """
+        p = self.u
+        self.v = torch.log(self.A(p) + self.eps) + 1
 
     def w_update(self, support, query, y_s_one_hot):
         """
@@ -152,14 +185,16 @@ class FUZZY_KMEANS(BASE):
         updates :
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
         """
-        num = (query.unsqueeze(2) * self.u.unsqueeze(3)**2).sum(1)
-        den  = (self.u**2).sum(1).clamp(self.eps)
-        self.w = num.div_(den.unsqueeze(2)) 
+  
+        num = (query.unsqueeze(2) * self.u.unsqueeze(3)).sum(1)
+        den  = self.u.sum(1).clamp(min=self.eps)
+        cluster_sizes = self.u.sum(1).unsqueeze(-1)
+        nonzero_clusters = cluster_sizes > self.eps
+        self.w = num.div_(den.unsqueeze(2)) * nonzero_clusters + (self.w * (1 - 1*nonzero_clusters))
 
-     
     def run_method(self, support, query, y_s, y_q):
         """
-        Corresponds to the FUZZY_KMEANS inference
+        Corresponds to the PADDLE inference
         inputs:
             support : torch.Tensor of shape [n_task, shot, feature_dim]
             query : torch.Tensor of shape [n_task, n_query, feature_dim]
@@ -167,47 +202,51 @@ class FUZZY_KMEANS(BASE):
             y_q : torch.Tensor of shape [n_task, n_query]
 
         updates :from copy import deepcopy
-            self.u : torch.Tensor of shape [n_task, n_query, num_class]         (soft labels)
-            self.v : torch.Tensor of shape [n_task, num_class]                  (dual variable)
+            self.u : torch.Tensor of shape [n_task, n_query, num_class]         (labels)
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]     (centroids)
         """
 
-        self.logger.info(" ==> Executing FUZZY_KMEANS with T = {}".format(self.args.T))
+        self.logger.info(" ==> Executing EM_GAUSSIAN with LAMBDA = {}".format(self.lambd))
         
         y_s_one_hot = get_one_hot(y_s)
         n_task, n_support, n_ways = y_s_one_hot.shape
-        #self.u = deepcopy(query)
+        
+        self.v = torch.zeros(n_task, n_ways).to(self.device)
+        self.w = torch.ones(n_task, n_ways, query.shape[-1]).to(self.device)
+        
         self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
         text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
         for task in range(n_task):
             image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
             sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
             self.u[task] = sim
-            
-        u_old = deepcopy(self.u)
 
         pbar = tqdm(range(self.iter))
         for i in pbar:
             t0 = time.time()
 
-            # update centroids
+            # Update centroids by averaging the assigned samples
             self.w_update(support, query, y_s_one_hot)
-
-            # update assignments
-            self.u_update(query)
-
-            criterions = (u_old - self.u).norm(dim=(1,2)).mean(0) 
-            t1 = time.time()
-            self.record_convergence(new_time=t1-t0, criterions=criterions)
-            u_old = deepcopy(self.u)
             
-            if i in [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+            # Update assignments
+            self.u_update(query)
+            print('u', self.u[0,0])
+            # update on dual variable v
+            self.v_update()
+
+            t1 = time.time()
+            u_old = deepcopy(self.u)
+
+            if i in [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
+                criterions = (u_old - self.u).norm(dim=(1,2)).mean(0) 
                 pbar.set_description(f"Criterion: {criterions}")
                 self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
                 t1 = time.time()
 
+        t1 = time.time()
+        self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
         if self.args.acc_clustering == True:
             self.compute_acc_clustering(query, y_q, support, y_s_one_hot)
         else:
             self.compute_acc(y_q=y_q)
-        
+
