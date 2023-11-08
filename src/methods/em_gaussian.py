@@ -206,7 +206,7 @@ class EM_GAUSSIAN(BASE):
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]     (centroids)
         """
 
-        self.logger.info(" ==> Executing EM_GAUSSIAN with LAMBDA = {}".format(self.lambd))
+        self.logger.info(" ==> Executing EM_GAUSSIAN with T = {}".format(self.args.T))
         
         y_s_one_hot = get_one_hot(y_s)
         n_task, n_support, n_ways = y_s_one_hot.shape

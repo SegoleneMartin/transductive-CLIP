@@ -110,7 +110,6 @@ class BASE(object):
         query = query.to(self.device).float()
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
-        print("query", query.shape)
         del task_dic
            
         # Run adaptation
@@ -185,7 +184,6 @@ class HARD_EM_DIRICHLET(BASE):
         alpha = deepcopy(alpha_0)
         
         for l in range(self.iter_mm):
-            #print(alpha)
             curv, digam = self.curvature(alpha)
             b = digam - torch.polygamma(0, alpha.sum(-1)).unsqueeze(-1) - curv * alpha 
             b = b - y_cst
@@ -197,7 +195,6 @@ class HARD_EM_DIRICHLET(BASE):
                 criterion = torch.norm(alpha_new - alpha)**2 / torch.norm(alpha)**2
                 if l % 1000 == 0:
                     print('iter', l, 'criterion', criterion)
-                    #print("alpha", alpha[0,0])
                 if criterion < 1e-11:
                     break
             alpha = deepcopy(alpha_new)            

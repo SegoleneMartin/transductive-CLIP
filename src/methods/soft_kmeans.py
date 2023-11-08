@@ -98,9 +98,6 @@ class BASE(object):
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
-
-        #scaler = MinMaxScaler(feature_range=(0, 1))
-        #support, query, scale, ratio = scaler(support, query)
            
         # Run adaptation
         self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
@@ -150,18 +147,6 @@ class SOFT_KMEANS(BASE):
         p = self.u
         self.v = torch.log(self.A(p) + self.eps) + 1
                 
-    def init_w(self, support, y_s_one_hot):
-        """
-        inputs:
-            support : torch.Tensor of shape [n_task, shot, feature_dim]
-            y_s : torch.Tensor of shape [n_task, shot]
-
-        updates :
-            self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
-        """
-        counts = (y_s_one_hot.sum(1)).unsqueeze(-1)
-        weights = (y_s_one_hot.unsqueeze(-1) * (support.unsqueeze(2))).sum(1)
-        self.w = weights.div_(counts)          
 
     def w_update(self, support, query, y_s_one_hot):
         """
@@ -208,7 +193,6 @@ class SOFT_KMEANS(BASE):
             image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
             sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
             self.u[task] = sim
-        #self.init_w(support, y_s_one_hot)
 
         pbar = tqdm(range(self.iter))
         for i in pbar:
@@ -228,8 +212,8 @@ class SOFT_KMEANS(BASE):
                 pbar.set_description(f"Criterion: {criterions}")
                 self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
                 t1 = time.time()
-            #print("u", self.u)
-        t1 = time.time()
+
+                t1 = time.time()
         self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
         if self.args.acc_clustering == True:
             self.compute_acc_clustering(query, y_q, support, y_s_one_hot)

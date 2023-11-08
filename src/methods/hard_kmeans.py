@@ -53,7 +53,6 @@ class BASE(object):
         """
 
         preds_q = self.u.argmax(2)
-        print(preds_q)
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
 

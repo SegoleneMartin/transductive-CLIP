@@ -230,7 +230,7 @@ class EM_GAUSSIAN_COV(BASE):
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]     (centroids)
         """
 
-        self.logger.info(" ==> Executing EM_GAUSSIAN_COV with LAMBDA = {}".format(self.lambd))
+        self.logger.info(" ==> Executing EM_GAUSSIAN_COV with T = {}".format(self.args.T))
         
         y_s_one_hot = get_one_hot(y_s)
         n_task, n_support, n_ways = y_s_one_hot.shape
@@ -262,7 +262,6 @@ class EM_GAUSSIAN_COV(BASE):
             # update on dual variable v
             self.v_update()
             
-            print('u', self.u[0, 0])
             t1 = time.time()
             u_old = deepcopy(self.u)
 

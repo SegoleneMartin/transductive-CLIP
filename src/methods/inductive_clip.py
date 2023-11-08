@@ -115,7 +115,6 @@ class CLIP(BASE):
         """
 
         self.logger.info(" ==> Executing CLIP")
-        
         n_task = query.shape[0]
         
         self.u = torch.zeros((n_task, query.shape[1], self.args.n_ways)).to(self.device)

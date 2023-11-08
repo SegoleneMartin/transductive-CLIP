@@ -1,2 +1,3 @@
 METHOD:
   name_method: 'CLIP'
+  graph_matching: False
