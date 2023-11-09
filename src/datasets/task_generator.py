@@ -33,7 +33,7 @@ class Tasks_Generator:
             new_labels_support[labels_support == y] = j 
             new_labels_query[labels_query == y] = j 
                 
-        if True: #self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'kl_kmeans']:
+        if self.args.method in ['em_dirichlet', 'hard_em_dirichlet', 'kl_kmeans']:
             new_data_query = data_query[:, unique_labels]
             new_data_support = data_support[:, unique_labels]
         else:
