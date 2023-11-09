@@ -163,8 +163,8 @@ class EM_GAUSSIAN(BASE):
         """
         feature_size, n_query = query.size(-1), query.size(1)
         logits = self.get_logits(query)
-        #self.u = (self.args.T * (logits + self.lambd * self.A_adj(self.v, n_query))).softmax(2)
-        self.u = ( (logits + self.lambd * self.A_adj(self.v, n_query))).softmax(2)
+        self.u = (self.args.T * (logits) + self.lambd * self.A_adj(self.v, n_query)).softmax(2)
+        #self.u = ( (logits + self.lambd * self.A_adj(self.v, n_query))).softmax(2)
 
     def v_update(self):
         """
