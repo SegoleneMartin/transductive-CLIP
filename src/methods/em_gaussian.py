@@ -36,17 +36,6 @@ class BASE(object):
         self.timestamps.append(new_time)
 
 
-    def compute_acc(self, y_q):
-        """
-        inputs:
-            y_q : torch.Tensor of shape [n_task, n_query] :
-        """
-
-        preds_q = self.u.argmax(2)
-        accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
-        self.test_acc.append(accuracy)
-
-
     def compute_acc_clustering(self, query, y_q, support, y_s_one_hot):
         n_task = query.shape[0]
         preds_q = self.u.argmax(2)
@@ -57,17 +46,19 @@ class BASE(object):
         nonzero_clusters = cluster_sizes > self.eps
         prototypes = prototypes * nonzero_clusters 
        
-        text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
-        probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
-        for task in range(n_task):
-            image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
-            probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
+        #text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+        #probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
+        #for task in range(n_task):
+        #    image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
+        #    probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
         
         if self.args.graph_matching == True:
-            new_preds_q = utils.compute_graph_matching(preds_q, probs, self.args)
+            #new_preds_q = utils.compute_graph_matching(preds_q, probs, self.args)
+            new_preds_q = utils.compute_graph_matching(preds_q, prototypes, self.args)
                 
         else:
-            new_preds_q = utils.compute_basic_matching(preds_q, probs, self.args)
+            #new_preds_q = utils.compute_basic_matching(preds_q, probs, self.args)
+            new_preds_q = utils.compute_basic_matching(preds_q, prototypes, self.args)
 
         accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
@@ -214,13 +205,14 @@ class EM_GAUSSIAN(BASE):
         self.v = torch.zeros(n_task, n_ways).to(self.device)
         self.w = torch.ones(n_task, n_ways, query.shape[-1]).to(self.device)
         
-        self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-        text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
-        for task in range(n_task):
-            image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
-            sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
-            self.u[task] = sim
-
+        self.u = deepcopy(query)
+        #self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
+        #text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+        #for task in range(n_task):
+        #    image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
+        #    sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
+        #    self.u[task] = sim
+        
         pbar = tqdm(range(self.iter))
         for i in pbar:
             t0 = time.time()
@@ -230,7 +222,6 @@ class EM_GAUSSIAN(BASE):
             
             # Update assignments
             self.u_update(query)
-            print('u', self.u[0,0])
             # update on dual variable v
             self.v_update()
 

@@ -15,4 +15,4 @@ EVAL:
     T: 5                    # temperature for defining the features
     backbone: 'RN50'        # CLIP's pretrained backbone
     lambd_opt: False        # keep it to this value, will probably be removed soon
-    use_softmax_feature: False
+    use_softmax_feature: True
