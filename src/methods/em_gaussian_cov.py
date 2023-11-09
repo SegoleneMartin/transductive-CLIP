@@ -17,7 +17,7 @@ class BASE(object):
         self.init_info_lists()
         self.args = args
         self.eps = 1e-15
-        self.lambd = args.n_query #args.lambd
+        self.lambd = int(args.num_classes_test / 5) * args.n_query
 
 
     def init_info_lists(self):
