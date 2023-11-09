@@ -239,7 +239,7 @@ class Evaluator:
             else:
                 word = 'basic'
             path = 'results_T_fixed_keff_auto_{}/{}/{}'.format(word, self.args.used_test_set, self.args.dataset)
-            name_file = path + '/{}_s{}.txt'.format(self.args.name_method + '_simplex', self.args.shots)
+            name_file = path + '/{}_s{}.txt'.format(self.args.name_method + '_theoric_simplex', self.args.shots)
 
             if not os.path.exists(path):
                 os.makedirs(path)
