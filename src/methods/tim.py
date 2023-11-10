@@ -75,9 +75,7 @@ class BASE(object):
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
-        print("support", support.shape)
-        print("query", query.shape)
-           
+
         # Run adaptation
         self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
 
@@ -256,7 +254,7 @@ class ALPHA_TIM(BASE):
         optimizer = torch.optim.Adam([self.weights], lr=self.lr)
         y_s_one_hot = get_one_hot(y_s)
         self.model.train()
-
+        
         pbar = tqdm(range(self.iter))
         for i in pbar:
             weights_old = deepcopy(self.weights.detach())

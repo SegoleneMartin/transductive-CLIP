@@ -54,7 +54,18 @@ class BASE(object):
         self.criterions.append(criterions)
         self.timestamps.append(new_time)
 
+        
+    def compute_acc(self, y_q):
+        """
+        inputs:
+            y_q : torch.Tensor of shape [n_task, n_query] :
+        """
 
+        preds_q = self.u.argmax(2)
+        accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
+        self.test_acc.append(accuracy)
+        
+        
     def compute_acc_clustering(self, query, y_q, support, y_s_one_hot):
         n_task = query.shape[0]
         preds_q = self.u.argmax(2)
