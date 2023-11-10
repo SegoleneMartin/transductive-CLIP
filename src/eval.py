@@ -80,7 +80,7 @@ class Evaluator:
             
             if self.args.dataset == 'imagenet':
                 path = 'results_T_fixed_fewshot/val/{}'.format('caltech101')
-                name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
+                name_file = path + '/{}_s{}.txt'.format(self.args.name_method + word, self.args.shots)
                 
             print(" path", path)
             try:

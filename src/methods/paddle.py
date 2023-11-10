@@ -52,8 +52,9 @@ class BASE(object):
         return {'timestamps': self.timestamps, 'criterions':self.criterions,
                 'acc': self.test_acc}
 
-
-    def run_task(self, task_dic, shot=10):
+    
+    
+    def run_task(self, task_dic, shot):
         """
         inputs:
             task_dic : dictionnary with n_tasks few-shot tasks
@@ -67,20 +68,17 @@ class BASE(object):
         query = task_dic['x_q']             # [n_task, n_query, feature_dim]
 
         # Transfer tensors to GPU if needed
-        support = support.to(self.device).double()
-        query = query.to(self.device).double()
+        support = support.to(self.device).float() #.double()
+        query = query.to(self.device).float() #.double()
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
-        del task_dic
         
-        #scaler = MinMaxScaler(feature_range=(0, 1))
-        #support, query, scale, ratio = scaler(support, query)
-           
-        # Run adaptation
+        # Run method
         self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
 
         # Extract adaptation logs
         logs = self.get_logs()
+
         return logs
 
 
@@ -148,19 +146,22 @@ class PADDLE(BASE):
         p = self.u
         self.v = torch.log(self.A(p) + self.eps) + 1
                 
-    def init_w(self, support, y_s_one_hot):
+    def init_w(self, support, query, y_s):
         """
+        Init prototypes
         inputs:
             support : torch.Tensor of shape [n_task, shot, feature_dim]
+            query : torch.Tensor of shape [n_task, n_query, feature_dim]
             y_s : torch.Tensor of shape [n_task, shot]
-
-        updates :
-            self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
         """
+        # Compute initial prototypes by averaging support features per class
+        y_s_one_hot = get_one_hot(y_s)
         counts = (y_s_one_hot.sum(1)).unsqueeze(-1)
         weights = (y_s_one_hot.unsqueeze(-1) * (support.unsqueeze(2))).sum(1)
-        self.w = weights.div_(counts)          
+        init_prototypes = weights.div_(counts)      
 
+        return init_prototypes
+    
     def w_update(self, support, query, y_s_one_hot):
         """
         Corresponds to w_k updates
@@ -200,8 +201,8 @@ class PADDLE(BASE):
         y_s_one_hot = get_one_hot(y_s)
         n_task, n_support, n_ways = y_s_one_hot.shape
         
+        self.w = self.init_w(support=support, query=query, y_s=y_s)
         self.v = torch.zeros(n_task, n_ways).to(self.device)
-        self.init_w(support, y_s_one_hot)
 
         pbar = tqdm(range(self.iter))
         for i in pbar:
@@ -224,7 +225,7 @@ class PADDLE(BASE):
                 pbar.set_description(f"Criterion: {criterions}")
                 self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
                 t1 = time.time()
-
+        #"""
         t1 = time.time()
         self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
         if self.args.acc_clustering == True:
