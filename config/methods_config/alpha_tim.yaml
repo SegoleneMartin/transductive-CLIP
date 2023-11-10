@@ -7,3 +7,4 @@ METHOD:
   entropies: ['Shannon', 'Alpha', 'Alpha'] # [Xent, H(Y), H(Y|X)]
   alpha_values: 7.0 # [Xent, H(Y), H(Y|X)]
   acc_clustering: False
+  tunable: True

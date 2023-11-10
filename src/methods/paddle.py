@@ -4,9 +4,6 @@ import torch
 import time
 from copy import deepcopy
 import numpy as np
-from scipy.sparse.csgraph import min_weight_full_bipartite_matching
-from scipy.sparse import csr_matrix
-from scipy.optimize import linear_sum_assignment
 
 class BASE(object):
 
@@ -19,7 +16,7 @@ class BASE(object):
         self.init_info_lists()
         self.args = args
         self.eps = 1e-15
-        self.lambd = args.n_query #args.lambd
+        self.lambd = args.lambd
 
 
     def init_info_lists(self):
@@ -46,45 +43,6 @@ class BASE(object):
 
         preds_q = self.u.argmax(2)
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
-        self.test_acc.append(accuracy)
-
-
-    def compute_acc_clustering(self, query, y_q, support, y_s_one_hot):
-        n_task = query.shape[0]
-        preds_q = self.u.argmax(2)
-        preds_q_one_hot = get_one_hot_full(preds_q, self.args.num_classes_test)
-        new_preds_q = torch.zeros_like(y_q)
-
-        if self.args.shots == 0:
-            prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1).clamp(min=self.eps).unsqueeze(-1))
-            cluster_sizes = preds_q_one_hot.sum(1).unsqueeze(-1) # N x K
-            nonzero_clusters = cluster_sizes > self.eps
-            prototypes = prototypes * nonzero_clusters 
-        else:
-            prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1) + (y_s_one_hot.unsqueeze(-1) * support.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1) + y_s_one_hot.sum(1)).unsqueeze(-1)
-
-        list_clusters = []
-        list_A = []
-        for task in range(n_task):
-            clusters = []
-            num_clusters = len(torch.unique(preds_q[task]))
-            A = np.zeros((num_clusters, int(self.args.n_ways)))
-            for i, cluster in enumerate(preds_q[task]):
-                if cluster.item() not in clusters:
-                    A[len(clusters), :] = - prototypes[task, cluster].cpu().numpy()
-                    clusters.append(cluster.item())
-            list_A.append(A)
-            list_clusters.append(clusters)
-        
-        for task in range(n_task):
-            A = list_A[task]
-            clusters = list_clusters[task]
-            #__, matching_classes = min_weight_full_bipartite_matching(csr_matrix(A), maximize=False)
-            __, matching_classes = linear_sum_assignment(A, maximize=False)
-            for i, cluster in enumerate(preds_q[task]):
-                new_preds_q[task, i] = matching_classes[clusters.index(cluster)]
-     
-        accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
 
 
@@ -115,8 +73,8 @@ class BASE(object):
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
         
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        support, query, scale, ratio = scaler(support, query)
+        #scaler = MinMaxScaler(feature_range=(0, 1))
+        #support, query, scale, ratio = scaler(support, query)
            
         # Run adaptation
         self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
@@ -215,18 +173,13 @@ class PADDLE(BASE):
         updates :
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
         """
-        if self.args.shots != 0: 
-            num = (query.unsqueeze(2) * self.u.unsqueeze(3)).sum(1)
-            den  = self.u.sum(1)
-            num.add_((support.unsqueeze(2) * y_s_one_hot.unsqueeze(3)).sum(1))
-            den.add_(y_s_one_hot.sum(1))
-            self.w = num.div_(den.unsqueeze(2)) 
-        else:
-            num = (query.unsqueeze(2) * self.u.unsqueeze(3)).sum(1)
-            den  = self.u.sum(1).clamp(min=self.eps)
-            cluster_sizes = self.u.sum(1).unsqueeze(-1)
-            nonzero_clusters = cluster_sizes > self.eps
-            self.w = num.div_(den.unsqueeze(2)) * nonzero_clusters
+
+        num = (query.unsqueeze(2) * self.u.unsqueeze(3)).sum(1)
+        den  = self.u.sum(1)
+        num.add_((support.unsqueeze(2) * y_s_one_hot.unsqueeze(3)).sum(1))
+        den.add_(y_s_one_hot.sum(1))
+        self.w = num.div_(den.unsqueeze(2)) 
+
 
     def run_method(self, support, query, y_s, y_q):
         """

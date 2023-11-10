@@ -3,3 +3,4 @@ METHOD:
   iter: 20
   acc_clustering: True
   graph_matching: True
+  tunable: False

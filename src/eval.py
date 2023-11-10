@@ -7,11 +7,13 @@ from src.methods.em_dirichlet import EM_DIRICHLET
 from src.methods.em_gaussian import EM_GAUSSIAN
 from src.methods.em_gaussian_cov import EM_GAUSSIAN_COV
 from src.methods.paddle import PADDLE
+from src.methods.bdcspn import BDCSPN
 from src.methods.soft_kmeans import SOFT_KMEANS
 from src.methods.hard_kmeans import HARD_KMEANS
 from src.methods.tim import ALPHA_TIM, TIM_GD
 from src.methods.hard_em_dirichlet import HARD_EM_DIRICHLET
 from src.methods.inductive_clip import CLIP
+from src.methods.laplacian_shot import LAPLACIAN_SHOT
 from src.methods.clip_linear_probe import CLIP_LINEAR_PROBE
 from src.datasets import Tasks_Generator, SamplerSupport, SamplerQuery, CategoriesSampler, build_data_loader
 from src.datasets import OxfordPets, EuroSAT, UCF101, Caltech101, DescribableTextures, FGVCAircraft, Food101, Flowers102, StanfordCars, ImageNet, SUN397
@@ -68,55 +70,36 @@ class Evaluator:
         #extract_features(model, dataset, train_loader, 'train', self.args, self.device)
 
         # Load the features for the given temperature
-        if self.args.used_test_set == 'test' and self.args.shots > 0:  # if the inference is on the test set, set the temperature to the optimal one found during validation
-                
-            path = 'results/val/{}'.format(self.args.dataset)
-            #name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
-            name_file = path + '/{}_s0.txt'.format(self.args.name_method)
+        if self.args.used_test_set == 'test' and self.args.shots > 0 and self.args.tunable == True:  # if the inference is on the test set, set the temperature to the optimal one found during validation
+            if self.args.use_softmax_feature == True:
+                word = ''
+            else:
+                word = '_visual'
+            path = 'results_T_fixed_fewshot/val/{}'.format(self.args.dataset)
+            name_file = path + '/{}_s{}.txt'.format(self.args.name_method + word, self.args.shots)
             
             if self.args.dataset == 'imagenet':
-                path = 'results/val/{}'.format('caltech101')
-                #name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
-                name_file = path + '/{}_s0.txt'.format(self.args.name_method)
+                path = 'results_T_fixed_fewshot/val/{}'.format('caltech101')
+                name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
                 
             print(" path", path)
             try:
-                if self.args.name_method in ['PADDLE', 'ALPHA_TIM']:
-                    f =  open(name_file, 'r')
-                    list_param1, list_param2 , list_acc = [], [], []
-                    for i, line in enumerate(f):
-                        if i < 1 :
-                            continue
-                        line = line.split('\t')
-                        list_param1.append(int(line[0]))
-                        list_param2.append(float(line[1]))
-                        list_acc.append(float(line[2]))
-
-                    list_acc = np.array(list_acc)
-                    index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
-                    opt_param1 = list_param1[index]
-                    opt_param2 = list_param2[index]
-                    self.set_method_opt_params(opt_param1, opt_param2)
-                    
-                else:
-                    f =  open(name_file, 'r')
-                    list_param, list_acc = [], []
-                    for i, line in enumerate(f):
-                        if i < 5 :
-                            continue
-                        line = line.split('\t')
-                        list_param.append(int(line[0]))
-                        list_acc.append(float(line[1]))
-                    list_acc = np.array(list_acc)
-                    index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
-                    opt_param = list_param[index]
-                    self.set_method_opt_param(opt_param)
+                f =  open(name_file, 'r')
+                list_param, list_acc = [], []
+                for i, line in enumerate(f):
+                    if i < 2 :
+                        continue
+                    line = line.split('\t')
+                    list_param.append(float(line[0]))
+                    list_acc.append(float(line[1]))
+                list_acc = np.array(list_acc)
+                index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
+                opt_param = list_param[index]
+                self.set_method_opt_param(opt_param)
                 
             except:
                 
                 raise ValueError("The optimal parameter was not found. Please make sure you have performed the tuning of the parameter on the validation set.")
-        else:
-            self.args.T = 30
                    
         if self.args.used_test_set == 'val':
             self.args.used_train_set = 'val'
@@ -197,15 +180,15 @@ class Evaluator:
         
         ## If validation mode, report results
         if self.args.used_test_set == 'val': 
-            print("METHOD", self.args.name_method)
-            if self.args.name_method in ['PADDLE', 'ALPHA_TIM']:
-                print('ENTERED')
-                self.get_method_val_params()
-            else:
-                self.get_method_val_param()
+
+            self.get_method_val_param()
                         
-            path = 'results/{}/{}'.format(self.args.used_test_set, self.args.dataset)
-            name_file = path + '/{}_s{}.txt'.format(self.args.name_method, self.args.shots)
+            if self.args.use_softmax_feature == True:
+                word = ''
+            else:
+                word = '_visual'
+            path = 'results_T_fixed_fewshot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            name_file = path + '/{}_s{}.txt'.format(self.args.name_method  + word, self.args.shots)
 
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -219,10 +202,7 @@ class Evaluator:
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks,
                                                                                     mean_accuracies[0]))
             
-            if self.args.name_method in ['PADDLE', 'ALPHA_TIM']:
-                f.write(str(self.val_param1) + '\t' + str(self.val_param2) + '\t')
-            else:
-                f.write(str(self.val_param) + '\t')
+            f.write(str(self.val_param) + '\t')
             f.write(str(round(100 * mean_accuracies[0], 2)) + '\t' )
             f.write('\n')
             f.close()
@@ -234,12 +214,16 @@ class Evaluator:
             var = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
             var_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
-            if self.args.graph_matching == True:
-                word = 'graph'
+            #if self.args.graph_matching == True:
+            #    word = 'graph'
+            #else:
+            #    word = 'basic'
+            if self.args.use_softmax_feature == True:
+                word = ''
             else:
-                word = 'basic'
-            path = 'results_T_fixed_keff_auto_{}/{}/{}'.format(word, self.args.used_test_set, self.args.dataset)
-            name_file = path + '/{}_s{}.txt'.format(self.args.name_method + '_optim', self.args.shots)
+                word = '_visual'
+            path = 'results_T_fixed_fewshot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            name_file = path + '/{}_s{}.txt'.format(self.args.name_method + word, self.args.shots)
 
             if not os.path.exists(path):
                 os.makedirs(path)
@@ -275,6 +259,10 @@ class Evaluator:
             method_builder = HARD_EM_DIRICHLET(**method_info)
         elif self.args.name_method == 'PADDLE':
             method_builder = PADDLE(**method_info)
+        elif self.args.name_method == 'BDCSPN':
+            method_builder = BDCSPN(**method_info)
+        elif self.args.name_method == 'LAPLACIAN_SHOT':
+            method_builder = LAPLACIAN_SHOT(**method_info)
         elif self.args.name_method == 'EM_GAUSSIAN':
             method_builder = EM_GAUSSIAN(**method_info)
         elif self.args.name_method == 'EM_GAUSSIAN_COV':
@@ -290,51 +278,31 @@ class Evaluator:
         elif self.args.name_method == 'CLIP':
             method_builder = CLIP(**method_info)
         else:
-            self.logger.exception("Method must be in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET', 'CLIP_LINEAR_PROBE']")
-            raise ValueError("Method must be in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET', 'CLIP_LINEAR_PROBE']")
+            self.logger.exception("The method your entered does not exist. Please check the spelling.")
+            raise ValueError("The method your entered does not exist. Please check the spelling")
         return method_builder
     
     
     def get_method_val_param(self):
         # fixes for each method the name of the parameter on which validation is performed
-        if self.args.name_method in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET']:
-            self.val_param = self.args.T
+        if self.args.name_method ==  'LAPLACIAN_SHOT':
+            self.val_param = self.args.lmd
         elif self.args.name_method == 'ALPHA_TIM':
             self.val_param = self.args.alpha_value
         elif self.args.name_method == 'PADDLE':
             self.val_param = self.args.lambd
+        elif self.args.name_method == 'BDCSPN':
+            self.val_param = self.args.temp
             
-    def get_method_val_params(self):
-        # fixes for each method the name of the parameter on which validation is performed
-        if self.args.name_method in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET']:
-            self.val_param1 = self.args.T
-            self.val_param2 = self.args.fact
-        elif self.args.name_method == 'ALPHA_TIM':
-            self.val_param1 = self.args.T
-            self.val_param2 = self.args.alpha_value
-        elif self.args.name_method == 'PADDLE':
-            self.val_param1 = self.args.T
-            self.val_param2 = self.args.lambd
-
             
     def set_method_opt_param(self, opt_param):
         # fixes for each method the name of the parameter on which validation is performed
-        if self.args.name_method in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET']:
-            print("opt_param", opt_param)
-            self.args.T = opt_param
+        if self.args.name_method  ==  'LAPLACIAN_SHOT':
+            self.args.lmd = opt_param
         elif self.args.name_method == 'ALPHA_TIM':
             self.args.alpha_value = opt_param
         elif self.args.name_method == 'PADDLE':
             self.args.lambd = opt_param
+        elif self.args.name_method == 'BDCSPN':
+            self.args.temp = opt_param
             
-    def set_method_opt_params(self, opt_param1, opt_param2):
-        # fixes for each method the name of the parameter on which validation is performed
-        if self.args.name_method in ['FUZZY_KMEANS', 'KL_KMEANS', 'EM_DIRICHLET', 'HARD_EM_DIRICHLET']:
-            self.args.T = opt_param1
-            self.args.fact = opt_param2
-        elif self.args.name_method == 'ALPHA_TIM':
-            self.args.T = opt_param1
-            self.args.alpha_value = opt_param2
-        elif self.args.name_method == 'PADDLE':
-            self.args.T = opt_param1
-            self.args.lambd = opt_param2

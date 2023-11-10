@@ -4,3 +4,4 @@ METHOD:
   lambd: 0
   acc_clustering: True
   graph_matching: True
+  tunable: False

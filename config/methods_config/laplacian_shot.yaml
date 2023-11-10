@@ -1,0 +1,8 @@
+METHOD:
+  name_method: 'LAPLACIAN_SHOT'
+  knn: 3
+  lmd: 0.7
+  norm_type: 'L2N' # ('CL2N', 'L2N', 'UN')
+  iter: 20
+  temp: 30
+  tunable: True

@@ -1,5 +1,6 @@
 METHOD:
   name_method: 'PADDLE'
   iter: 20
-  lambd: 0
+  lambd: 0.0
   acc_clustering: False
+  tunable: True

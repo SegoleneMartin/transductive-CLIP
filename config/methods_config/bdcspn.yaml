@@ -1,0 +1,6 @@
+METHOD:
+  name_method: 'BDCSPN'
+  num_NN: 1
+  norm_type: 'L2N' # ('CL2N', 'L2N', 'UN')
+  temp: 30.0
+  tunable: True

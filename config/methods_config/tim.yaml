@@ -6,3 +6,4 @@ METHOD:
   iter: 2000
   alpha: 1.0
   acc_clustering: False
+  tunable: True
