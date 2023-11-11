@@ -1,13 +1,13 @@
 EVAL:
     dataset: 'flowers102' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
-    method: 'laplacian_shot' #'hard_em_dirichlet'  # 'kl_kmeans', 'fuzzy_kmeans', 'fgvcaircraft', 'hard_em_dirichlet', 'clip_linear_probe' 
+    method: 'em_dirichlet' #'hard_em_dirichlet'  # 'kl_kmeans', 'fuzzy_kmeans', 'fgvcaircraft', 'hard_em_dirichlet', 'clip_linear_probe' 
     number_tasks: 1000        # Number of tasks to evaluate
-    batch_size: 100
+    batch_size: 1000
     k_eff: 10                # number of different classes represented in the query
     n_ways : 'full'         # 'full' for all test classes (i.e. K), or integer
     n_query: 75            # number of samples in the query set
     sampling: 'uniform'     # ('balanced' | 'uniform') sampling of the query
-    shots: 4              # number of shots
+    shots: 0              # number of shots
     log_path: '.log/'
     save_results: False
     used_test_set: 'test'   # 'val' or 'test'

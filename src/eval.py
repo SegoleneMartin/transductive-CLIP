@@ -3,6 +3,7 @@ import numpy as np
 from src.utils import compute_confidence_interval, Logger
 from src.methods.fuzzy_kmeans import FUZZY_KMEANS
 from src.methods.kl_kmeans import KL_KMEANS
+#from src.methods.em_dirichlet_newton import EM_DIRICHLET
 from src.methods.em_dirichlet import EM_DIRICHLET
 from src.methods.em_gaussian import EM_GAUSSIAN
 from src.methods.em_gaussian_cov import EM_GAUSSIAN_COV
@@ -166,6 +167,8 @@ class Evaluator:
             logs = method.run_task(task_dic=tasks, shot=shot)
             acc_mean, acc_conf = compute_confidence_interval(logs['acc'][:, -1])
             timestamps, criterions = logs['timestamps'], logs['criterions']
+            #np.save('EM_Dirichlet_Newton_criterion_vs_time_bis_{}.npy'.format(self.args.T), [timestamps, criterions])
+            #np.save('EM_Dirichlet_criterion_vs_time_bis_{}.npy'.format(self.args.T), [timestamps, criterions])
             # print(timestamps, criterions)
             results_task.append(acc_mean)
             del method
@@ -222,7 +225,8 @@ class Evaluator:
                 word = ''
             else:
                 word = '_visual'
-            path = 'results_T_fixed_fewshot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            #path = 'results_T_fixed_fewshot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results_query/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method + word, self.args.shots)
 
             if not os.path.exists(path):

@@ -97,7 +97,7 @@ class SamplerQuery:
 
     def __iter__(self):
         for i_batch in range(self.n_batch):
-            #self.k_eff = random.randint(3, 10)
+            self.k_eff = random.randint(5, 10)
             #print('k_eff', self.k_eff)
             query_size = 0
             n_trials = 0
