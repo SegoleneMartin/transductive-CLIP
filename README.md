@@ -1,4 +1,4 @@
-# Extending few-shot classification knowledge to CLIP
+# Transductive zero-shot and few-shot CLIP
 
 
 ## 1. Getting started
