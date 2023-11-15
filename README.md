@@ -28,12 +28,12 @@ The downloaded datasets should be placed in the folder data/ the following way:
     └── ...
 
 ### 1.3 Extracting and saving the features
-For all the temperatures $T \in [1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]$, we extract and save the features defined as
+For a fixed temperature ($T=30$ recommended), we extract and save the features defined as
 ```math 
 z_n = \text{softmax}(T \cos(f_{\text{im}}(x_n), f_{\text{text}}(t_k) )) 
 ```
 
-For instance, for the dataset eurosat, the temperature T=10 and the backbone RN50, the features will be saved under
+For instance, for the dataset eurosat, the temperature T=30 and the backbone RN50, the features will be saved under
 
     eurosat
     ├── saved_features                    
@@ -44,15 +44,15 @@ For instance, for the dataset eurosat, the temperature T=10 and the backbone RN5
 
 The feature extraction process can take a while but once it is done the method runs pretty fast.
 
-### 1.4 Setting the optimal temperature with the validation set (for each dataset and each method)
+### 1.4 Setting the optimal parameter with the validation set (for alpha_tim, paddle, bdcspn and laplacian_shot only)
 Given a fixed dataset and a fixed method, we run the method on 1000 transductive tasks constituting of images of the validation set. More specifically, these tasks are constituted with
-- $|\mathbb{Q}|=75$
+- $|\mathbb{Q}|=35$
 - $k_{\text{eff}}=5$
 - 0 shots
 
 The accuracy is then evaluated on these tasks and the best temperature can be determined this way.
 To run the temperature tuning process, run
-```bash scripts/script_val_Topt.sh```
+```bash scripts/script_val_fewshot.sh```
 The results will be saved in results/val/method.
 
 Note: as no validation set is provided for ImageNet, we use the same optimal temperature as for Caltech101.
