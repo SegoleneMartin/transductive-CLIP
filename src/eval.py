@@ -61,14 +61,14 @@ class Evaluator:
         dataset = dataset_list[self.args.dataset](self.args.dataset_path)
         self.args.classnames = dataset.classnames
         self.args.template = dataset.template
-        #train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
-        #val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
-        #test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
 
         # Extract features of query, support and val for all the temperatures (if they do not already exist)
-        #extract_features(model, dataset, test_loader, 'test', self.args, self.device)
-        #extract_features(model, dataset, val_loader, 'val', self.args, self.device)
-        #extract_features(model, dataset, train_loader, 'train', self.args, self.device)
+        extract_features(model, dataset, test_loader, 'test', self.args, self.device, list_T=[self.args.T])
+        extract_features(model, dataset, val_loader, 'val', self.args, self.device, list_T=[self.args.T])
+        extract_features(model, dataset, train_loader, 'train', self.args, self.device, list_T=[self.args.T])
 
         # Load the features for the given temperature
         if self.args.used_test_set == 'test' and self.args.shots > 0 and self.args.tunable == True:  # if the inference is on the test set, set the temperature to the optimal one found during validation
@@ -123,9 +123,11 @@ class Evaluator:
         all_features_query = extracted_features_dic_query['concat_features'].to('cpu')
         all_labels_query = extracted_features_dic_query['concat_labels'].long().to('cpu')
     
+    
         self.logger.info("=> Runnning full evaluation with method: {}".format(self.args.name_method))
 
         results = []
+        results_time = []
   
         if self.args.shots == 0:
             shot = 1  # ugly solution for now because the code was not really adapted to 0 shot yet
@@ -133,16 +135,13 @@ class Evaluator:
             shot = self.args.shots
             
         results_task = []
+        results_task_time = []
         for i in range(int(self.args.number_tasks/self.args.batch_size)):
-            if (self.args.dataset == 'stanfordcars' or self.args.dataset == 'sun397') and self.args.used_test_set == 'val': # the validation set of stanford cars does not contain enough samples
-                force_query_size = True
-            else:
-                force_query_size = True
 
             # create sampler for transductive few-shot tasks
             sampler = CategoriesSampler(all_labels_support, all_labels_query, self.args.batch_size,
                                     self.args.k_eff, self.args.n_ways, shot, self.args.n_query, 
-                                    self.args.sampling, force_query_size)
+                                    self.args.sampling, force_query_size=True)
             sampler.create_list_classes(all_labels_support, all_labels_query)
             sampler_support = SamplerSupport(sampler)
             sampler_query = SamplerQuery(sampler)
@@ -167,16 +166,15 @@ class Evaluator:
             logs = method.run_task(task_dic=tasks, shot=shot)
             acc_mean, acc_conf = compute_confidence_interval(logs['acc'][:, -1])
             timestamps, criterions = logs['timestamps'], logs['criterions']
-            #np.save('EM_Dirichlet_Newton_criterion_vs_time_bis_{}.npy'.format(self.args.T), [timestamps, criterions])
-            #np.save('EM_Dirichlet_criterion_vs_time_bis_{}.npy'.format(self.args.T), [timestamps, criterions])
-            # print(timestamps, criterions)
             results_task.append(acc_mean)
+            results_task_time.append(timestamps)
             del method
             del tasks
         results.append(results_task)
+        results_time.append(results_task_time)
 
         mean_accuracies = np.asarray(results).mean(1)
-    
+        mean_times = np.asarray(results_time).mean(1)
     
         self.logger.info('----- Final results -----')
         
@@ -202,8 +200,7 @@ class Evaluator:
                 f = open(name_file, 'w')
                 f.write('val_param' + '\t' + 'acc' + '\n')
                 
-            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks,
-                                                                                    mean_accuracies[0]))
+            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies[0]))
             
             f.write(str(self.val_param) + '\t')
             f.write(str(round(100 * mean_accuracies[0], 2)) + '\t' )
@@ -238,8 +235,8 @@ class Evaluator:
                 f = open(name_file, 'w')
                 f.write(var_names +'\t' + '\n')
                 
-            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks,
-                                                                                    mean_accuracies[0]))
+            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies[0]))
+            self.logger.info('{}-shot mean time over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_times[0][0]))
             f.write(str(var)+'\t')
             f.write(str(round(100 * mean_accuracies[0], 1)) +'\t' )
             f.write('\n')
@@ -247,6 +244,7 @@ class Evaluator:
             
         else:
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies[0]))
+            self.logger.info('{}-shot mean time over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_times[0][0]))
             
         return mean_accuracies
 

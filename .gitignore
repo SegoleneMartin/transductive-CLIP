@@ -4,6 +4,8 @@
 data/
 logs
 results_old
+results_query
+results_T_fixed_keff_auto_basic
 *.DS_Store
 scripts_old/
 __pycache__/

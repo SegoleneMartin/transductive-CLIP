@@ -195,7 +195,7 @@ class EM_DIRICHLET(BASE):
             delta = b**2 + 4 * a
             alpha_new = (- b + torch.sqrt(delta)) / (2 * a)
 
-            if l > 0:
+            if l > 0 and l%50==0:
                 criterion = torch.norm(alpha_new - alpha)**2 / torch.norm(alpha)**2
                 if l % 1000 == 0:
                     print('iter', l, 'criterion', criterion)
@@ -233,6 +233,7 @@ class EM_DIRICHLET(BASE):
         self.v = torch.zeros(n_task, n_ways).to(self.device)
         self.alpha = torch.ones((n_task, n_ways, n_ways)).to(self.device)
         alpha_old = deepcopy(self.alpha)
+        
         t0 = time.time()
         
         if self.args.shots != 0:  # inplace operations to save memory
@@ -277,8 +278,8 @@ class EM_DIRICHLET(BASE):
             
             if i in [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 pbar.set_description(f"Criterion: {criterions}")
-                self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
-                t1 = time.time()
+                #self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
+                #t1 = time.time()
             
             #print('u', self.u)
         t1 = time.time()
