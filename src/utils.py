@@ -327,7 +327,7 @@ def load_pickle(file):
     
     
 def extract_features(model, dataset, loader, set_name, args, 
-                          device, list_T=[1, 2, 3, 4, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]):
+                          device, list_T=[10, 20, 30, 40, 50]):
     """
         inputs:
             model : The loaded model containing the feature extractor
@@ -339,13 +339,12 @@ def extract_features(model, dataset, loader, set_name, args,
             Saves the features in data/args.dataset/saved_features/ for T in list_T under the name 
             '{}_softmax_{}_T{}.plk'.format(set_name, args.backbone, T)
     """
-    list_T = [30]
     for T in list_T:
         # Check if features are already saved
         features_save_path = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(args.dataset, set_name, args.backbone, T)
         #features_save_path = 'data/{}/saved_features/{}_{}.plk'.format(args.dataset, set_name, args.backbone)
         if os.path.exists(features_save_path):
-            print('Features already saved for T = {}, skipping'.format(T))
+            print('Features already saved for split {} and T = {}, skipping'.format(set_name, T))
             continue
         else:
             print('Extracting features on {} for T = {}'.format(args.dataset,T))
@@ -395,7 +394,6 @@ def clip_weights(model, classnames, template, device):
     text_features /= text_features.norm(dim=-1, keepdim=True)
 
     return text_features
-
 
 
 def compute_graph_matching(preds_q, probs, args):

@@ -150,11 +150,11 @@ class TIM_GD(BASE):
         optimizer = torch.optim.Adam([self.weights], lr=self.lr)
         y_s_one_hot = get_one_hot(y_s)
         self.model.train()
-
+        
+        t0 = time.time()
         pbar = tqdm(range(self.iter))
         for i in pbar:
             weights_old = deepcopy(self.weights.detach())
-            t0 = time.time()
             logits_s = self.get_logits(support)
             logits_q = self.get_logits(query)
 
@@ -168,14 +168,14 @@ class TIM_GD(BASE):
             loss.backward()
             optimizer.step()
             
-            t1 = time.time()
+            #t1 = time.time()
             if i in [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 weight_diff = (weights_old - self.weights).norm(dim=-1).mean(-1)
                 criterions = weight_diff
                 self.record_convergence(new_time=t1-t0, criterions=criterions)
                 pbar.set_description(f"Criterion: {criterions}")
-                self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
-                t1 = time.time()
+                #self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
+                #t1 = time.time()
 
         t1 = time.time()
         self.model.eval()
@@ -254,11 +254,11 @@ class ALPHA_TIM(BASE):
         optimizer = torch.optim.Adam([self.weights], lr=self.lr)
         y_s_one_hot = get_one_hot(y_s)
         self.model.train()
+        t0 = time.time()
         
         pbar = tqdm(range(self.iter))
         for i in pbar:
             weights_old = deepcopy(self.weights.detach())
-            t0 = time.time()
             logits_s = self.get_logits(support)
             logits_q = self.get_logits(query)
             q_probs = logits_q.softmax(2)
@@ -295,13 +295,13 @@ class ALPHA_TIM(BASE):
             loss.backward()
             optimizer.step()
 
-            t1 = time.time()
+            #t1 = time.time()
 
             if i in [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 weight_diff = (weights_old - self.weights.detach()).norm(dim=-1).mean()
                 pbar.set_description(f"Criterion: {weight_diff}")
-                self.record_convergence(new_time=(t1-t0) / n_task, criterions=weight_diff)
-                t1 = time.time()
+                #self.record_convergence(new_time=(t1-t0) / n_task, criterions=weight_diff)
+                #t1 = time.time()
 
         t1 = time.time()
         self.model.eval()

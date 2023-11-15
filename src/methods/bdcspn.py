@@ -2,6 +2,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 import torch
 from ..utils import Logger, get_one_hot
+import time
 
 class BDCSPN(object):
     def __init__(self, model, device, log_file, args):
@@ -169,7 +170,8 @@ class BDCSPN(object):
             y_q : torch.Tensor of shape [n_task, n_query]
         """
         self.logger.info(f" ==> Executing BD-CSPN")
-
+        
+        t0 = time.time()
         # Prototype rectification
         prototypes = self.proto_rectification(support=support, query=query, y_s=y_s, shot=shot)
 
@@ -178,8 +180,9 @@ class BDCSPN(object):
         u = (self.temp * cos_sim).softmax(-1)  # n x num_class
         preds_q = u.argmax(2)
 
+        t1 = time.time()
         # Record the information 
-        self.record_convergence(new_time=0, criterions=torch.zeros(1).to(self.device))
+        self.record_convergence(new_time=t1-t0, criterions=torch.zeros(1).to(self.device))
             
         self.compute_acc(y_q, preds_q)
         return preds_q

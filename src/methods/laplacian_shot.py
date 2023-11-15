@@ -223,6 +223,7 @@ class LAPLACIAN_SHOT(object):
             inference time
         """
         self.logger.info(" ==> Executing LAPLACIAN SHOT with lmd = {}".format(self.lmd))
+        t0 = time.time()
         for i in tqdm(range(self.number_tasks)):
 
             substract = support[i][:, None, :] - query[i]
@@ -231,5 +232,6 @@ class LAPLACIAN_SHOT(object):
             W = self.create_affinity(query[i])
             preds, acc_list, ent_energy, times = self.bound_update(unary=unary, kernel=W, bound_lambda=self.lmd, y_s=y_s, y_q=y_q, task_i=i,
                                                 bound_iteration=self.iter)
-
-            self.record_info(acc=acc_list, ent_energy=ent_energy, new_time=times, criterions=[0])
+            
+            t1 = time.time()
+            self.record_info(acc=acc_list, ent_energy=ent_energy, new_time=t1 - t0, criterions=[0])

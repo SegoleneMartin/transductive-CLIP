@@ -48,9 +48,6 @@ def main():
 
     torch.cuda.set_device(args.device)
         
-    print('k_eff = ', args.k_eff)
-    print('n_ways = ', args.n_ways)
-
     # create model
     model, preprocess = clip.load(args.backbone, device)
 
