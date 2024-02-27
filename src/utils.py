@@ -434,3 +434,50 @@ def compute_basic_matching(preds_q, probs, args):
         new_preds_q[task] = matching_classes[preds_q[task]]
         
     return new_preds_q
+
+
+def extract_cosine_features(model, visual_embeddings, labels, classnames, template, 
+                     set_name, args, device, list_T=[10, 20, 30, 40, 50]):
+    """
+    inputs:
+        model : The loaded model containing the feature extractor
+        visual_embeddings: Tensor of visual embeddings [Number of samples, size of visual embeddings]
+        labels: Tensor of labels [Number of samples]
+        classnames : Class names
+        template : Template for text features
+        args : arguments
+        device : GPU device
+
+    returns:
+        Saves the features in data/args.dataset/saved_features/ for T in list_T under the name 
+        '{}_cosine_{}_T{}.plk'.format(set_name, args.backbone, T)
+    """
+    # Create text embeddings for all classes
+    text_features = clip_weights(model, classnames, template, device).float()
+
+    # Normalize visual embeddings
+    visual_embeddings = visual_embeddings.to(device)
+    visual_embeddings /= visual_embeddings.norm(dim=-1, keepdim=True)
+
+    for T in list_T:
+        features_save_path = 'data/{}/saved_features/{}_cosine_{}_T{}.plk'.format(args.dataset, set_name, args.backbone, T)
+        if os.path.exists(features_save_path):
+            print(f'Features already saved for {set_name} and T = {T}, skipping')
+            continue
+        else:
+            print(f'Extracting features on {args.dataset} for T = {T}')
+
+        with torch.no_grad():
+            cosine_similarity = T * (visual_embeddings @ text_features.T)
+            #cosine_similarity = (T * visual_embeddings @ text_features.T).softmax(dim=-1)
+            all_features = cosine_similarity.cpu()
+            all_labels = labels.cpu()
+        
+        # Save features
+        extracted_features_dic = {'concat_features': all_features, 'concat_labels': all_labels}
+        try:
+            os.makedirs(os.path.dirname(features_save_path), exist_ok=True)
+        except Exception as e:
+            print(f"Error creating directory: {e}")
+
+        save_pickle(features_save_path, extracted_features_dic)

@@ -11,6 +11,7 @@ from src.methods.paddle import PADDLE
 from src.methods.bdcspn import BDCSPN
 from src.methods.soft_kmeans import SOFT_KMEANS
 from src.methods.hard_kmeans import HARD_KMEANS
+from src.methods.hard_dirichlet import HARD_DIRICHLET
 from src.methods.tim import ALPHA_TIM, TIM_GD
 from src.methods.hard_em_dirichlet import HARD_EM_DIRICHLET
 from src.methods.inductive_clip import CLIP
@@ -19,7 +20,7 @@ from src.methods.clip_linear_probe import CLIP_LINEAR_PROBE
 from src.datasets import Tasks_Generator, SamplerSupport, SamplerQuery, CategoriesSampler, build_data_loader
 from src.datasets import OxfordPets, EuroSAT, UCF101, Caltech101, DescribableTextures, FGVCAircraft, Food101, Flowers102, StanfordCars, ImageNet, SUN397
 import os
-from src.utils import load_pickle, extract_features
+from src.utils import load_pickle, extract_features, extract_cosine_features
 
 dataset_list = {
                 "oxfordpets": OxfordPets,
@@ -61,14 +62,14 @@ class Evaluator:
         dataset = dataset_list[self.args.dataset](self.args.dataset_path)
         self.args.classnames = dataset.classnames
         self.args.template = dataset.template
-        train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
-        val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
-        test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        #train_loader = build_data_loader(data_source=dataset.train_x, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        #val_loader = build_data_loader(data_source=dataset.val, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
+        #test_loader = build_data_loader(data_source=dataset.test, batch_size=1024, is_train=False, shuffle=False, tfm=preprocess)
 
         # Extract features of query, support and val for all the temperatures (if they do not already exist)
-        extract_features(model, dataset, test_loader, 'test', self.args, self.device, list_T=[self.args.T])
-        extract_features(model, dataset, val_loader, 'val', self.args, self.device, list_T=[self.args.T])
-        extract_features(model, dataset, train_loader, 'train', self.args, self.device, list_T=[self.args.T])
+        #extract_features(model, dataset, test_loader, 'test', self.args, self.device, list_T=[self.args.T])
+        #extract_features(model, dataset, val_loader, 'val', self.args, self.device, list_T=[self.args.T])
+        #extract_features(model, dataset, train_loader, 'train', self.args, self.device, list_T=[self.args.T])
 
         # Load the features for the given temperature
         if self.args.used_test_set == 'test' and self.args.shots > 0 and self.args.tunable == True:  # if the inference is on the test set, set the temperature to the optimal one found during validation
@@ -109,7 +110,9 @@ class Evaluator:
 
         if self.args.use_softmax_feature == True:
             filepath_support = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone, self.args.T)
+            #filepath_support = 'data/{}/saved_features/{}_cosine_{}_T{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone, self.args.T)
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
+            #filepath_query = 'data/{}/saved_features/{}_cosine_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
         else:
             filepath_support = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone)
             filepath_query = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
@@ -120,8 +123,12 @@ class Evaluator:
 
         all_features_support = extracted_features_dic_support['concat_features'].to('cpu')
         all_labels_support = extracted_features_dic_support['concat_labels'].long().to('cpu')
+        #print("all_labels_support", all_labels_support.shape)
+        #extract_cosine_features(model, all_features_support, all_labels_support, self.args.classnames, self.args.template,  'train', self.args, self.device, list_T=[self.args.T])
+        
         all_features_query = extracted_features_dic_query['concat_features'].to('cpu')
         all_labels_query = extracted_features_dic_query['concat_labels'].long().to('cpu')
+        #extract_cosine_features(model, all_features_query, all_labels_query, self.args.classnames, self.args.template,  'test', self.args, self.device, list_T=[self.args.T])
     
     
         self.logger.info("=> Runnning full evaluation with method: {}".format(self.args.name_method))
@@ -188,7 +195,7 @@ class Evaluator:
                 word = ''
             else:
                 word = '_visual'
-            path = 'results_T_fixed_fewshot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results_ablation_fewshot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method  + word, self.args.shots)
 
             if not os.path.exists(path):
@@ -223,7 +230,7 @@ class Evaluator:
             else:
                 word = '_visual'
             #path = 'results_T_fixed_fewshot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
-            path = 'results_query/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results_fewshot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method + word, self.args.shots)
 
             if not os.path.exists(path):
@@ -272,7 +279,9 @@ class Evaluator:
         elif self.args.name_method == 'SOFT_KMEANS':
             method_builder = SOFT_KMEANS(**method_info)
         elif self.args.name_method == 'HARD_KMEANS':
-            method_builder = HARD_KMEANS(**method_info)
+            method_builder = HARD_DIRICHLET(**method_info)
+        elif self.args.name_method == 'HARD_DIRICHLET':
+            method_builder = HARD_DIRICHLET(**method_info)
         elif self.args.name_method == 'ALPHA_TIM':
             method_builder = ALPHA_TIM(**method_info)
         elif self.args.name_method == 'CLIP_LINEAR_PROBE':

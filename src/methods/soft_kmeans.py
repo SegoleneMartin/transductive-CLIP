@@ -59,8 +59,9 @@ class BASE(object):
         text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
         probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
         for task in range(n_task):
-            image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
-            probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
+            #image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
+            #probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
+            probs[task] = (prototypes[task]).softmax(dim=-1) # K
         
         if self.args.graph_matching == True:
             new_preds_q = utils.compute_graph_matching(preds_q, probs, self.args)
@@ -139,7 +140,7 @@ class SOFT_KMEANS(BASE):
         """
         feature_size, n_query = query.size(-1), query.size(1)
         logits = self.get_logits(query)
-        self.u = (self.args.T * logits).softmax(2)
+        self.u = (logits).softmax(2) #(self.args.T * logits).softmax(2)
 
     def v_update(self):
         """
@@ -191,9 +192,10 @@ class SOFT_KMEANS(BASE):
         self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
         text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
         for task in range(n_task):
-            image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
-            sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
-            self.u[task] = sim
+            #image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
+            #sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
+            #self.u[task] = sim
+            self.u[task] = (query[task]).softmax(dim=-1)
 
 
         pbar = tqdm(range(self.iter))

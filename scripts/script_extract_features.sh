@@ -1,6 +1,6 @@
 n_query=75
 k_eff=5
-used_test_set='val'
+used_test_set='test'
 s=0
 acc_clustering=True
 device=0

@@ -1,0 +1,8 @@
+METHOD:
+  name_method: 'HARD_DIRICHLET'
+  iter: 10
+  lambd: 0  
+  iter_mm: 1000
+  acc_clustering: True
+  graph_matching: True
+  tunable: False

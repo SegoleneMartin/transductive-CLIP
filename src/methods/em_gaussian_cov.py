@@ -49,8 +49,9 @@ class BASE(object):
         text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
         probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
         for task in range(n_task):
-            image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
-            probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
+            #image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
+            #probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
+            probs[task] = (prototypes[task]).softmax(dim=-1) # K
         
         if self.args.graph_matching == True:
             new_preds_q = utils.compute_graph_matching(preds_q, probs, self.args)
@@ -62,6 +63,7 @@ class BASE(object):
 
         accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
+        
         
 
     def get_logs(self):
@@ -232,11 +234,12 @@ class EM_GAUSSIAN_COV(BASE):
         
         #self.u = deepcopy(query)
         self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-        text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+        #text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
         for task in range(n_task):
-            image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
-            sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
-            self.u[task] = sim
+        #    image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
+        #    sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
+        #    self.u[task] = sim
+            self.u[task] = (query[task]).softmax(dim=-1)
 
         pbar = tqdm(range(self.iter))
         for i in pbar:
