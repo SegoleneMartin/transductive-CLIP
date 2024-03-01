@@ -4,9 +4,7 @@ EVAL:
     number_tasks: 100        # Number of tasks to evaluate
     batch_size: 100
     k_eff: 10                # number of different classes represented in the query
-    n_ways : 'full'         # 'full' for all test classes (i.e. K), or integer
     n_query: 75            # number of samples in the query set
-    sampling: 'uniform'     # ('balanced' | 'uniform') sampling of the query
     shots: 0              # number of shots
     log_path: '.log/'
     save_results: False

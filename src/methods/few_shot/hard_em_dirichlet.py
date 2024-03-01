@@ -6,13 +6,12 @@ from copy import deepcopy
 import numpy as np
 from .. import utils
 
-
 class BASE(object):
 
     def __init__(self, model, device, log_file, args):
         self.device = device
         self.iter = args.iter
-        self.lambd = 0*int(args.num_classes_test / 5) * args.n_query  #int(args.num_classes_test / args.k_eff) * args.n_query * args.fact
+        self.lambd = int(args.num_classes_test / args.k_eff) * args.n_query 
         self.model = model
         self.log_file = log_file
         self.logger = Logger(__name__, self.log_file)
@@ -27,7 +26,6 @@ class BASE(object):
         self.criterions = []
         self.test_acc = []
 
-
     def get_logits(self, samples):
         """
         inputs:
@@ -37,14 +35,11 @@ class BASE(object):
         """
         l1 = torch.lgamma(self.alpha.sum(-1)).unsqueeze(1)
         l2 = - torch.lgamma(self.alpha).sum(-1).unsqueeze(1)
-        if self.args.shots == 0:
-            l3 = ((self.alpha.unsqueeze(1) - 1) * torch.log(samples + self.eps).unsqueeze(2)).sum(-1)
-        else:
-            l3 = ((self.alpha.unsqueeze(1) - 1) * samples.unsqueeze(2)).sum(-1)
+        l3 = ((self.alpha.unsqueeze(1) - 1) * samples.unsqueeze(2)).sum(-1)
         logits = l1 + l2 + l3
         return - logits  # N x n x K
-    
 
+    
     def record_convergence(self, new_time, criterions):
         """
         inputs:
@@ -54,7 +49,7 @@ class BASE(object):
         self.criterions.append(criterions)
         self.timestamps.append(new_time)
 
-        
+
     def compute_acc(self, y_q):
         """
         inputs:
@@ -64,28 +59,8 @@ class BASE(object):
         preds_q = self.u.argmax(2)
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
-        
-        
-    def compute_acc_clustering(self, query, y_q, support, y_s_one_hot):
-        n_task = query.shape[0]
-        preds_q = self.u.argmax(2)
-        preds_q_one_hot = get_one_hot_full(preds_q, self.args.n_ways)
 
-        prototypes = ((preds_q_one_hot.unsqueeze(-1) * query.unsqueeze(2)).sum(1)) / (preds_q_one_hot.sum(1).clamp(min=self.eps).unsqueeze(-1))
-        cluster_sizes = preds_q_one_hot.sum(1).unsqueeze(-1) # N x K
-        nonzero_clusters = cluster_sizes > self.eps
-        prototypes = prototypes * nonzero_clusters 
-        
-        if self.args.graph_matching == True:
-            new_preds_q = utils.compute_graph_matching(preds_q, prototypes, self.args)
-                
-        else:
-            new_preds_q = utils.compute_basic_matching(preds_q, prototypes, self.args)
-
-        accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
-        self.test_acc.append(accuracy)
-
-
+    
     def get_logs(self):
         self.criterions = torch.stack(self.criterions, dim=0).cpu().numpy()
         self.test_acc = torch.cat(self.test_acc, dim=1).cpu().numpy()
@@ -112,7 +87,7 @@ class BASE(object):
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
-                   
+           
         # Run adaptation
         self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
 
@@ -120,17 +95,14 @@ class BASE(object):
         logs = self.get_logs()
         return logs
 
-
-class EM_DIRICHLET(BASE):
+class HARD_EM_DIRICHLET(BASE):
 
     def __init__(self, model, device, log_file, args):
         super().__init__(model=model, device=device, log_file=log_file, args=args)
 
-
     def __del__(self):
         self.logger.del_logger() 
         
-
     def A(self, p):
         """
         inputs:
@@ -158,7 +130,7 @@ class EM_DIRICHLET(BASE):
         return p
     
     
-    def u_update(self, query, n_support):
+    def u_update(self, query):
         """
         inputs:
             query : torch.Tensor of shape [n_task, n_query, feature_dim]
@@ -203,11 +175,31 @@ class EM_DIRICHLET(BASE):
                     break
             alpha = deepcopy(alpha_new)            
         self.alpha = deepcopy(alpha_new)
-    
+        
+        
+    def objective_function(self, support, query, y_s_one_hot):
 
+        l1 = torch.lgamma(self.alpha.sum(-1)).unsqueeze(1)
+        l2 = - torch.lgamma(self.alpha).sum(-1).unsqueeze(1)
+        l3 = ((self.alpha.unsqueeze(1) - 1) * torch.log(query + self.eps).unsqueeze(2)).sum(-1)
+        datafit_query = -(self.u * (l1 + l2 + l3)).sum(-1).sum(1)
+        l1 = torch.lgamma(self.alpha.sum(-1)).unsqueeze(1)
+        l2 = - torch.lgamma(self.alpha).sum(-1).unsqueeze(1)
+        l3 = ((self.alpha.unsqueeze(1) - 1) * torch.log(support + self.eps).unsqueeze(2)).sum(-1)
+        datafit_support = -(y_s_one_hot * (l1 + l2 + l3)).sum(-1).sum(1)
+        datafit = 1 / 2 * (datafit_query + datafit_support)
+        
+        reg_ent = (self.u * torch.log(self.u + self.eps)).sum(-1).sum(1)
+        
+        props = self.u.mean(1)
+        part_complexity = - self.lambd * (props * torch.log(props + self.eps)).sum(-1)
+        
+        return datafit + reg_ent + part_complexity
+    
+    
     def run_method(self, support, query, y_s, y_q):
         """
-        Corresponds to the EM DIRICHLET inference
+        Corresponds to the Hard EM DIRICHLET inference
         inputs:
             support : torch.Tensor of shape [n_task, shot, feature_dim]
             query : torch.Tensor of shape [n_task, n_query, feature_dim]
@@ -217,10 +209,9 @@ class EM_DIRICHLET(BASE):
         updates :from copy import deepcopy
             self.u : torch.Tensor of shape [n_task, n_query, num_class]         (soft labels)
             self.v : torch.Tensor of shape [n_task, num_class]                  (dual variable)
-            self.alpha : torch.Tensor of shape [n_task, num_class, feature_dim]     (dirichlet parameters)
+            self.w : torch.Tensor of shape [n_task, num_class, feature_dim]     (centroids)
         """
-
-        self.logger.info(" ==> Executing EM-DIRICHLET with LAMBDA = {} and T = {}".format(self.lambd, self.args.T))
+        self.logger.info(" ==> Executing HARD EM-DIRICHLET with LAMBDA = {} and T = {}".format(self.lambd, self.args.T))
         
         y_s_one_hot = get_one_hot(y_s)
         n_task, n_support, n_ways = y_s_one_hot.shape
@@ -233,43 +224,33 @@ class EM_DIRICHLET(BASE):
         self.v = torch.zeros(n_task, n_ways).to(self.device)
         self.alpha = torch.ones((n_task, n_ways, n_ways)).to(self.device)
         alpha_old = deepcopy(self.alpha)
-        
         t0 = time.time()
         
-        if self.args.shots != 0:  # inplace operations to save memory
-            support.add_(self.eps)
-            query.add_(self.eps)
-            support.log_()
-            query.log_()
-        
+        # inplace operations to save memory
+        support.add_(self.eps)
+        query.add_(self.eps)
+        support.log_()
+        query.log_()
+            
         pbar = tqdm(range(self.iter))
         for i in pbar:
 
             # update of dirichlet parameter alpha
-            if self.args.shots == 0: # in this case, avoid errors du to possibly empty clusters by estimating alpha only for non empty clusters
-                cluster_sizes = self.u.sum(dim=1).unsqueeze(-1).float()#.double() # N x K  
-                nonzero_clusters = cluster_sizes > self.eps
-                y_cst = ((self.u.unsqueeze(-1) * torch.log(query + self.eps).unsqueeze(2)).sum(1)) / (self.u.sum(1).clamp(min=self.eps).unsqueeze(-1))
-                y_cst = y_cst * nonzero_clusters + (1 - 1*nonzero_clusters) * torch.ones_like(y_cst) * (-10)
-                self.update_alpha(self.alpha, y_cst)
-                alpha_new = self.alpha * nonzero_clusters + alpha_old * (1 - 1*nonzero_clusters)
-                self.alpha = alpha_new
-                del alpha_new
-                
-            else:
-                y_s_sum = y_s_one_hot.sum(dim=1)  # Shape [n_task, num_class]
-                u_sum = self.u.sum(dim=1) 
-                y_cst = (1 / (y_s_sum + u_sum)).unsqueeze(-1)
-                y_cst = y_cst * ((y_s_one_hot.unsqueeze(-1) * support.unsqueeze(2)).sum(dim=1) + (self.u.unsqueeze(-1) * query.unsqueeze(2)).sum(dim=1))
-                #y_cst = 1 / (y_s_one_hot.sum(1) + self.u.sum(1)).unsqueeze(-1) * ((y_s_one_hot.unsqueeze(-1) * torch.log(support +self.eps).unsqueeze(2)).sum(1) + (self.u.unsqueeze(-1) * torch.log(query + self.eps).unsqueeze(2)).sum(1))
-                self.update_alpha(self.alpha, y_cst)
-            
+            y_s_sum = y_s_one_hot.sum(dim=1)  # Shape [n_task, num_class]
+            u_sum = self.u.sum(dim=1) 
+            y_cst = (1 / (y_s_sum + u_sum)).unsqueeze(-1)
+            y_cst = y_cst * ((y_s_one_hot.unsqueeze(-1) * support.unsqueeze(2)).sum(dim=1) + (self.u.unsqueeze(-1) * query.unsqueeze(2)).sum(dim=1))
+            self.update_alpha(self.alpha, y_cst)
+
             # update on dual variable v
             self.v_update()
 
-            # update on assignment variable u
-            self.u_update(query, n_support)
-
+            # update hard assignment variable u
+            self.u_update(query)
+            labels = torch.argmax(self.u, dim=-1)
+            self.u.zero_()
+            self.u.scatter_(2, labels.unsqueeze(-1), 1.0)
+            
             u_old = deepcopy(self.u)
             alpha_diff = ((alpha_old - self.alpha).norm(dim=(1,2)) / alpha_old.norm(dim=(1,2))).mean(0) 
             criterions = alpha_diff
@@ -280,13 +261,9 @@ class EM_DIRICHLET(BASE):
                 pbar.set_description(f"Criterion: {criterions}")
                 #self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
                 #t1 = time.time()
-            
-            #print('u', self.u)
-        t1 = time.time()
-        self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
-        if self.args.acc_clustering == True:
-            self.compute_acc_clustering(query, y_q, support, y_s_one_hot)
-        else:
-            self.compute_acc(y_q=y_q)
 
+        t1 = time.time()
+        criterions = ((u_old).norm(dim=(1,2)) / u_old.norm(dim=(1,2))).mean(0) 
+        self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
+        self.compute_acc(y_q=y_q)
 

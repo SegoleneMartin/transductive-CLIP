@@ -2,6 +2,18 @@ import torch
 
 class Tasks_Generator:
     def __init__(self, k_eff, shot, n_query, n_ways, loader_support, loader_query, model, args):
+        """
+        Initialize the Tasks_Generator.
+        :param k_eff: Effective number of samples per class in support set.
+        :param shot: Number of samples per class in the support set.
+        :param n_query: Number of samples in the query set.
+        :param n_ways: Number of classes (typically the total number of classes in the test set).
+        :param loader_support: Data loader for the support set.
+        :param loader_query: Data loader for the query set.
+        :param model: Model used for extracting features.
+        :param args: Additional arguments.
+        """
+         
         self.k_eff = k_eff
         self.shot = shot
         self.n_query = n_query

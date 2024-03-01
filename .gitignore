@@ -4,10 +4,13 @@
 data/
 logs
 results_old
+results_sim
+results_fewshot
 results_query
 results_T_fixed_keff_auto_basic
 *.DS_Store
 scripts_old/
+src/methods/em_dirichlet_newton.py
 __pycache__/
 */__pycache__/
 */*/__pycache__/

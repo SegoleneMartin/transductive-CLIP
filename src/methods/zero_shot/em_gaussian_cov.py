@@ -36,7 +36,7 @@ class BASE(object):
         self.timestamps.append(new_time)
 
 
-    def compute_acc_clustering(self, query, y_q, support, y_s_one_hot):
+    def compute_acc_clustering(self, query, y_q):
         n_task = query.shape[0]
         preds_q = self.u.argmax(2)
         preds_q_one_hot = get_one_hot_full(preds_q, self.args.n_ways)
@@ -49,8 +49,9 @@ class BASE(object):
         text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
         probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
         for task in range(n_task):
-            image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
-            probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
+            #image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
+            #probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
+            probs[task] = (prototypes[task]).softmax(dim=-1) # K
         
         if self.args.graph_matching == True:
             new_preds_q = utils.compute_graph_matching(preds_q, probs, self.args)
@@ -63,6 +64,7 @@ class BASE(object):
         accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
         
+        
 
     def get_logs(self):
         self.criterions = torch.stack(self.criterions, dim=0).cpu().numpy()
@@ -71,35 +73,30 @@ class BASE(object):
                 'acc': self.test_acc}
 
 
-    def run_task(self, task_dic, shot=10):
+    def run_task(self, task_dic):
         """
         inputs:
-            task_dic : dictionnary with n_tasks few-shot tasks
-            shot : scalar, number of shots
+            task_dic : dictionnary with n_tasks zero-shot tasks
         """
 
-        # Extract support and query
-        y_s = task_dic['y_s']               # [n_task, shot]
+        # Extract query
         y_q = task_dic['y_q']               # [n_task, n_query]
-        support = task_dic['x_s']           # [n_task, shot, feature_dim]
         query = task_dic['x_q']             # [n_task, n_query, feature_dim]
 
         # Transfer tensors to GPU if needed
-        support = support.to(self.device).double()
         query = query.to(self.device).double()
-        y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
         
         # Run adaptation
-        self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
+        self.run_method(query=query, y_q=y_q)
 
         # Extract adaptation logs
         logs = self.get_logs()
         return logs
 
 
-class EM_GAUSSIAN(BASE):
+class EM_GAUSSIAN_COV(BASE):
 
     def __init__(self, model, device, log_file, args):
         super().__init__(model=model, device=device, log_file=log_file, args=args)
@@ -107,7 +104,7 @@ class EM_GAUSSIAN(BASE):
 
     def __del__(self):
         self.logger.del_logger()
-     
+    
     def get_logits(self, samples):
         """
         inputs:
@@ -116,8 +113,8 @@ class EM_GAUSSIAN(BASE):
             logits : torch.Tensor of shape [n_task, shot, num_class]
         """
         diff = self.w.unsqueeze(1) - samples.unsqueeze(2)  # N x n x K x C
-        logits = (diff.square_()).sum(dim=-1)
-        return - 1 / 2 * logits  # N x n x K
+        logits = ((diff.square_()).mul_(self.s.unsqueeze(1))).sum(dim=-1)
+        return -1 / 2 * logits  # N x n x K
 
     def A(self, p):
         """
@@ -154,8 +151,9 @@ class EM_GAUSSIAN(BASE):
         """
         feature_size, n_query = query.size(-1), query.size(1)
         logits = self.get_logits(query)
-        self.u = (self.args.T * (logits) + self.lambd * self.A_adj(self.v, n_query)).softmax(2)
-        #self.u = ( (logits + self.lambd * self.A_adj(self.v, n_query))).softmax(2)
+        det =  1 / 2 * (torch.log(self.s + self.eps).sum(-1)).unsqueeze(1)
+        #self.u = (self.args.T * (logits + det + self.lambd * self.A_adj(self.v, n_query))).softmax(2)
+        self.u = ((logits + det + self.lambd * self.A_adj(self.v, n_query))).softmax(2)
 
     def v_update(self):
         """
@@ -163,8 +161,8 @@ class EM_GAUSSIAN(BASE):
         """
         p = self.u
         self.v = torch.log(self.A(p) + self.eps) + 1
-
-    def w_update(self, support, query, y_s_one_hot):
+                
+    def w_update(self, query):
         """
         Corresponds to w_k updates
         inputs:
@@ -182,14 +180,22 @@ class EM_GAUSSIAN(BASE):
         cluster_sizes = self.u.sum(1).unsqueeze(-1)
         nonzero_clusters = cluster_sizes > self.eps
         self.w = num.div_(den.unsqueeze(2)) * nonzero_clusters + (self.w * (1 - 1*nonzero_clusters))
-
+            
+    def s_update(self, query):
+        """
+        inputs:
+        """
+        d_q = ((self.w.unsqueeze(1) - query.unsqueeze(2)).square_()).mul_(self.u.unsqueeze(3)).sum(1)
+        cluster_sizes = self.u.sum(1).unsqueeze(-1)
+        nonzero_clusters = cluster_sizes > self.eps
+        self.s = (self.u.sum(1)).unsqueeze(2) / d_q.clamp(min=self.eps) * nonzero_clusters + (self.s * (1 - 1*nonzero_clusters))
+        
+            
     def run_method(self, support, query, y_s, y_q):
         """
         Corresponds to the PADDLE inference
         inputs:
-            support : torch.Tensor of shape [n_task, shot, feature_dim]
             query : torch.Tensor of shape [n_task, n_query, feature_dim]
-            y_s : torch.Tensor of shape [n_task, shot]
             y_q : torch.Tensor of shape [n_task, n_query]
 
         updates :from copy import deepcopy
@@ -197,34 +203,37 @@ class EM_GAUSSIAN(BASE):
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]     (centroids)
         """
 
-        self.logger.info(" ==> Executing EM_GAUSSIAN with T = {}".format(self.args.T))
+        self.logger.info(" ==> Executing EM_GAUSSIAN_COV with T = {}".format(self.args.T))
         
-        y_s_one_hot = get_one_hot(y_s)
-        n_task, n_support, n_ways = y_s_one_hot.shape
+        n_task, n_ways = query.shape[0], self.args.num_classes_test
         
         self.v = torch.zeros(n_task, n_ways).to(self.device)
+        self.s = torch.ones(n_task, n_ways, query.shape[-1]).to(self.device)
         self.w = torch.ones(n_task, n_ways, query.shape[-1]).to(self.device)
         
-        #self.u = deepcopy(query)
         self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
         text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
         for task in range(n_task):
             image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
             sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
             self.u[task] = sim
-        
+
         pbar = tqdm(range(self.iter))
         for i in pbar:
             t0 = time.time()
 
             # Update centroids by averaging the assigned samples
-            self.w_update(support, query, y_s_one_hot)
+            self.w_update(support, query)
+            
+            # Update diagonal covariances
+            self.s_update(support, query)
             
             # Update assignments
             self.u_update(query)
+
             # update on dual variable v
             self.v_update()
-
+            
             t1 = time.time()
             u_old = deepcopy(self.u)
 
@@ -237,7 +246,7 @@ class EM_GAUSSIAN(BASE):
         t1 = time.time()
         self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
         if self.args.acc_clustering == True:
-            self.compute_acc_clustering(query, y_q, support, y_s_one_hot)
+            self.compute_acc_clustering(query, y_q)
         else:
             self.compute_acc(y_q=y_q)
 
