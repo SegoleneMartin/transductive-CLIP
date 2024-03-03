@@ -46,19 +46,20 @@ class BASE(object):
         nonzero_clusters = cluster_sizes > self.eps
         prototypes = prototypes * nonzero_clusters 
        
-        text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
-        probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
-        for task in range(n_task):
-            image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
-            probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
+        if self.args.use_softmax_feature:
+            probs = prototypes
+        else:
+            text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).float()
+            probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
+            for task in range(n_task):
+                image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
+                probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
         
         if self.args.graph_matching == True:
             new_preds_q = utils.compute_graph_matching(preds_q, probs, self.args)
-            #new_preds_q = utils.compute_graph_matching(preds_q, prototypes, self.args)
                 
         else:
             new_preds_q = utils.compute_basic_matching(preds_q, probs, self.args)
-            #new_preds_q = utils.compute_basic_matching(preds_q, prototypes, self.args)
 
         accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
@@ -114,30 +115,6 @@ class EM_GAUSSIAN(BASE):
         logits = (diff.square_()).sum(dim=-1)
         return - 1 / 2 * logits  # N x n x K
 
-    def A(self, p):
-        """
-        inputs:
-
-            p : torch.tensor of shape [n_tasks, q_shot, num_class]
-                where p[i,j,k] = probability of point j in task i belonging to class k
-                (according to our L2 classifier)
-        returns:
-            v : torch.Tensor of shape [n_task, q_shot, num_class]
-        """
-        n_samples = p.size(1)
-        v = p.sum(1) / n_samples
-        return v
-
-    def A_adj(self, v, q_shot):
-        """
-        inputs:
-            V : torch.tensor of shape [n_tasks, num_class]
-            q_shot : int
-        returns:
-            p : torch.Tensor of shape [n_task, q_shot, num_class]
-        """
-        p = v.unsqueeze(1).repeat(1, q_shot, 1) / q_shot
-        return p
     
     def u_update(self, query):
         """
@@ -147,17 +124,19 @@ class EM_GAUSSIAN(BASE):
         updates:
             self.u : torch.Tensor of shape [n_task, n_query, num_class]
         """
-        feature_size, n_query = query.size(-1), query.size(1)
+        n_query = query.size(1)
         logits = self.get_logits(query)
-        self.u = (self.args.T * (logits) + self.lambd * self.A_adj(self.v, n_query)).softmax(2)
-        #self.u = ( (logits + self.lambd * self.A_adj(self.v, n_query))).softmax(2)
+        self.u = (self.args.T * logits + self.lambd * self.v.unsqueeze(1) / n_query).softmax(2)
+
 
     def v_update(self):
         """
-        inputs:
+        updates:
+            self.v : torch.Tensor of shape [n_task, num_class]
+            --> corresponds to the log of the class proportions
         """
-        p = self.u
-        self.v = torch.log(self.A(p) + self.eps) + 1
+        self.v = torch.log(self.u.sum(1) / self.u.size(1) + self.eps) + 1
+
 
     def w_update(self, query):
         """
@@ -166,7 +145,6 @@ class EM_GAUSSIAN(BASE):
             support : torch.Tensor of shape [n_task, s_shot, feature_dim]
             query : torch.Tensor of shape [n_task, q_shot, feature_dim]
             y_s_one_hot : torch.Tensor of shape [n_task, s_shot, n_ways]
-
 
         updates :
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
@@ -178,13 +156,12 @@ class EM_GAUSSIAN(BASE):
         nonzero_clusters = cluster_sizes > self.eps
         self.w = num.div_(den.unsqueeze(2)) * nonzero_clusters + (self.w * (1 - 1*nonzero_clusters))
 
+
     def run_method(self, query, y_q):
         """
-        Corresponds to the PADDLE inference
+        Corresponds to the EM GAUSSIAN inference
         inputs:
-            support : torch.Tensor of shape [n_task, shot, feature_dim]
             query : torch.Tensor of shape [n_task, n_query, feature_dim]
-            y_s : torch.Tensor of shape [n_task, shot]
             y_q : torch.Tensor of shape [n_task, n_query]
 
         updates :from copy import deepcopy
@@ -195,18 +172,19 @@ class EM_GAUSSIAN(BASE):
         self.logger.info(" ==> Executing EM_GAUSSIAN with T = {}".format(self.args.T))
         
         n_task, n_ways = query.shape[0], self.args.num_classes_test
-
-        self.v = torch.zeros(n_task, n_ways).to(self.device)
-        self.w = torch.ones(n_task, n_ways, query.shape[-1]).to(self.device)
         
-        #self.u = deepcopy(query)
-        self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-        text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
-        for task in range(n_task):
-            image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
-            sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
-            self.u[task] = sim
-        
+        # Initialization
+        self.v = torch.zeros(n_task, n_ways).to(self.device)        # dual variable set to zero
+        if self.args.use_softmax_feature:
+            self.u = deepcopy(query)
+        else:
+            self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
+            text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+            for task in range(n_task):
+                image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
+                sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
+                self.u[task] = sim
+            
         pbar = tqdm(range(self.iter))
         for i in pbar:
             t0 = time.time()
@@ -216,22 +194,17 @@ class EM_GAUSSIAN(BASE):
             
             # Update assignments
             self.u_update(query)
-            # update on dual variable v
+
+            # update on dual variable v (= log of class proportions)
             self.v_update()
 
             t1 = time.time()
             u_old = deepcopy(self.u)
 
-            if i in [1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-                criterions = (u_old - self.u).norm(dim=(1,2)).mean(0) 
-                pbar.set_description(f"Criterion: {criterions}")
-                self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
-                t1 = time.time()
+            criterions = (u_old - self.u).norm(dim=(1,2)).mean(0) 
+            pbar.set_description(f"Criterion: {criterions}")
+            self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
+            t1 = time.time()
 
-        t1 = time.time()
-        self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
-        if self.args.acc_clustering == True:
-            self.compute_acc_clustering(query, y_q)
-        else:
-            self.compute_acc(y_q=y_q)
+        self.compute_acc_clustering(query, y_q)
 

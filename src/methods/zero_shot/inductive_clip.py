@@ -69,21 +69,17 @@ class BASE(object):
             shot : scalar, number of shots
         """
 
-        # Extract support and query
-        y_s = task_dic['y_s']               # [n_task, shot]
+       # Extract query
         y_q = task_dic['y_q']               # [n_task, n_query]
-        support = task_dic['x_s']           # [n_task, shot, feature_dim]
         query = task_dic['x_q']             # [n_task, n_query, feature_dim]
 
         # Transfer tensors to GPU if needed
-        support = support.to(self.device).double()
-        query = query.to(self.device).double()
-        y_s = y_s.long().squeeze(2).to(self.device)
+        query = query.to(self.device).float()
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
            
         # Run adaptation
-        self.run_method(support=support, query=query, y_s=y_s, y_q=y_q)
+        self.run_method(query=query, y_q=y_q)
 
         # Extract adaptation logs
         logs = self.get_logs()
@@ -99,13 +95,11 @@ class CLIP(BASE):
         self.logger.del_logger()
 
 
-    def run_method(self, support, query, y_s, y_q):
+    def run_method(self, query, y_q):
         """
-        Corresponds to the FUZZY_KMEANS inference
+        Corresponds to the ZERO SHOT CLIP inference
         inputs:
-            support : torch.Tensor of shape [n_task, shot, feature_dim]
             query : torch.Tensor of shape [n_task, n_query, feature_dim]
-            y_s : torch.Tensor of shape [n_task, shot]
             y_q : torch.Tensor of shape [n_task, n_query]
 
         updates :from copy import deepcopy
@@ -117,12 +111,18 @@ class CLIP(BASE):
         self.logger.info(" ==> Executing CLIP")
         n_task = query.shape[0]
         
-        self.u = torch.zeros((n_task, query.shape[1], self.args.n_ways)).to(self.device)
-        text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
-        for task in range(n_task):
-            image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
-            sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
-            self.u[task] = sim
+        n_task, n_ways = query.shape[0], self.args.num_classes_test
+        
+        # Initialization
+        if self.args.use_softmax_feature:
+            self.u = deepcopy(query)
+        else:
+            self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
+            text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+            for task in range(n_task):
+                image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
+                sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
+                self.u[task] = sim
             
         u_old = deepcopy(self.u)
         self.record_convergence(new_time=0, criterions=(u_old - self.u).norm(dim=(1,2)).mean(0))

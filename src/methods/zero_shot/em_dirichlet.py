@@ -39,7 +39,7 @@ class BASE(object):
         l2 = - torch.lgamma(self.alpha).sum(-1).unsqueeze(1)
         l3 = ((self.alpha.unsqueeze(1) - 1) * torch.log(samples + self.eps).unsqueeze(2)).sum(-1)
         logits = l1 + l2 + l3
-        return - logits  # N x n x K
+        return logits  # N x n x K
     
 
     def record_convergence(self, new_time, criterions):
@@ -72,12 +72,21 @@ class BASE(object):
         cluster_sizes = preds_q_one_hot.sum(1).unsqueeze(-1) # N x K
         nonzero_clusters = cluster_sizes > self.eps
         prototypes = prototypes * nonzero_clusters 
+       
+        if self.args.use_softmax_feature:
+            probs = prototypes
+        else:
+            text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).float()
+            probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
+            for task in range(n_task):
+                image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
+                probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
         
         if self.args.graph_matching == True:
-            new_preds_q = utils.compute_graph_matching(preds_q, prototypes, self.args)
+            new_preds_q = utils.compute_graph_matching(preds_q, probs, self.args)
                 
         else:
-            new_preds_q = utils.compute_basic_matching(preds_q, prototypes, self.args)
+            new_preds_q = utils.compute_basic_matching(preds_q, probs, self.args)
 
         accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
@@ -122,31 +131,6 @@ class EM_DIRICHLET(BASE):
 
     def __del__(self):
         self.logger.del_logger() 
-        
-
-    def A(self, p):
-        """
-        inputs:
-        p : torch.tensor of shape [n_tasks, q_shot, num_class]
-            where p[i,j,k] = probability of point j in task i belonging to class k
-        returns:
-            v : torch.Tensor of shape [n_task, q_shot, num_class]
-        """
-        n_samples = p.size(1)
-        v = p.sum(1) / n_samples
-        return v
-
-
-    def A_adj(self, v, q_shot):
-        """
-        inputs:
-            V : torch.tensor of shape [n_tasks, num_class]
-            q_shot : int
-        returns:
-            p : torch.Tensor of shape [n_task, q_shot, num_class]
-        """
-        p = v.unsqueeze(1).repeat(1, q_shot, 1) / q_shot
-        return p
     
     
     def u_update(self, query):
@@ -159,12 +143,16 @@ class EM_DIRICHLET(BASE):
         """
         __, n_query = query.size(-1), query.size(1)
         logits = self.get_logits(query)
-        self.u = (- logits + self.lambd * self.A_adj(self.v, n_query)).softmax(2)
+        self.u = (logits + self.lambd * self.v.unsqueeze(1) / n_query).softmax(2)
         
 
     def v_update(self):
-        p = self.u
-        self.v = torch.log(self.A(p) + self.eps) + 1
+        """
+        updates:
+            self.v : torch.Tensor of shape [n_task, num_class]
+            --> corresponds to the log of the class proportions
+        """
+        self.v = torch.log(self.u.sum(1) / self.u.size(1) + self.eps) + 1
         
 
     def curvature(self, alpha):
@@ -210,12 +198,19 @@ class EM_DIRICHLET(BASE):
         
         self.zero_value = torch.polygamma(1, torch.Tensor([1]).to(self.device)).float() #.double()
         self.log_gamma_1 = torch.lgamma(torch.Tensor([1]).to(self.device)).float() 
-
+        n_task, n_ways = query.shape[0], self.args.num_classes_test
+        
         # Initialization
-        n_task, n_query = query.size(0), query.size(1)
-        n_ways = self.args.num_classes_test
-        self.u = deepcopy(query)    # initialize u to the probabilities given by CLIP
-        self.v = torch.zeros(n_task, n_ways).to(self.device)
+        self.v = torch.zeros(n_task, n_ways).to(self.device)        # dual variable set to zero
+        if self.args.use_softmax_feature:
+            self.u = deepcopy(query)
+        else:
+            self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
+            text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+            for task in range(n_task):
+                image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
+                sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
+                self.u[task] = sim
         self.alpha = torch.ones((n_task, n_ways, n_ways)).to(self.device)
         alpha_old = deepcopy(self.alpha)
         t0 = time.time()
@@ -233,24 +228,21 @@ class EM_DIRICHLET(BASE):
             self.alpha = alpha_new
             del alpha_new
             
-            # update on dual variable v
+            # update on dual variable v (= log of the class proportions)
             self.v_update()
 
             # update on assignment variable u
             self.u_update(query)
 
+            # compute criterion
             alpha_diff = ((alpha_old - self.alpha).norm(dim=(1,2)) / alpha_old.norm(dim=(1,2))).mean(0) 
             criterions = alpha_diff
             alpha_old = deepcopy(self.alpha)
+
+            pbar.set_description(f"Criterion: {criterions}")
+            self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
             t1 = time.time()
-            
-            if i in [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-                pbar.set_description(f"Criterion: {criterions}")
-                #self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
-                #t1 = time.time()
-            
-        t1 = time.time()
-        self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
+
         self.compute_acc_clustering(query, y_q)
     
 
