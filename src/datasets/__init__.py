@@ -1,7 +1,7 @@
 from .task_generator_few_shot import Tasks_Generator_few_shot
 from .task_generator_zero_shot import Tasks_Generator_zero_shot
-from .sampler_few_shot import CategoriesSampler_few_shot
-from .sampler_zero_shot import CategoriesSampler_zero_shot
+from .sampler_few_shot import CategoriesSampler_few_shot, SamplerQuery_few_shot, SamplerSupport_few_shot
+from .sampler_zero_shot import CategoriesSampler_zero_shot, SamplerQuery_zero_shot
 from .utils import build_data_loader
 from .oxfordpets import OxfordPets
 from .eurosat import EuroSAT
