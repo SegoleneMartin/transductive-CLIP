@@ -54,6 +54,7 @@ class Evaluator_zero_shot:
         self.args.classnames = dataset.classnames
         self.args.template = dataset.template
         #data_loaders = self.initialize_data_loaders(dataset, preprocess)
+        data_loaders = None
 
         # Extract and load features
         extracted_features_dic_query = self.extract_and_load_features(model, dataset, data_loaders)
