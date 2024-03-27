@@ -54,7 +54,6 @@ class SamplerQuery_zero_shot:
             n_trials = 0
             while query_size < self.n_query and n_trials < 1:
                 classes = [self.list_classes[i] for i in torch.randperm(len(self.list_classes))[:self.k_eff].tolist()]
-                print("classes: ", classes)
                 query = []
                 complete_possible_samples = self.m_ind_query[classes[0]]
                 for c in classes[1:]:
