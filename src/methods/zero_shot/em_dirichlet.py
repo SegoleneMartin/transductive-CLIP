@@ -99,7 +99,7 @@ class BASE(object):
                 'acc': self.test_acc}
 
 
-    def run_task(self, task_dic, shot=10):
+    def run_task(self, task_dic):
         """
         inputs:
             task_dic : dictionnary with n_tasks few-shot tasks

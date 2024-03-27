@@ -162,7 +162,7 @@ class Evaluator_zero_shot:
             tasks = task_generator.generate_tasks()
             
             # Run task
-            logs = method.run_task(task_dic=tasks, shot=self.args.shot)
+            logs = method.run_task(task_dic=tasks)
             acc_mean, acc_conf = compute_confidence_interval(logs['acc'][:, -1])
             timestamps, criterions = logs['timestamps'], logs['criterions']
             results_task.append(acc_mean)
