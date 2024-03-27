@@ -1,10 +1,10 @@
-from src.utils import get_one_hot, get_one_hot_full, Logger
+from src.utils import get_one_hot, get_one_hot_full, Logger, clip_weights, compute_graph_matching, compute_basic_matching
 from tqdm import tqdm
 import torch
 import time
 from copy import deepcopy
 import numpy as np
-from src import utils
+
 
 class BASE(object):
 
@@ -56,19 +56,19 @@ class BASE(object):
         nonzero_clusters = cluster_sizes > self.eps
         prototypes = prototypes * nonzero_clusters 
        
-        text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+        text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
         probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
         for task in range(n_task):
             image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
             probs[task] = (self.args.T * image_features @ text_features.T).softmax(dim=-1) # K
         
         if self.args.graph_matching == True:
-            new_preds_q = utils.compute_graph_matching(preds_q, probs, self.args)
-            #new_preds_q = utils.compute_graph_matching(preds_q, prototypes, self.args)
+            new_preds_q = compute_graph_matching(preds_q, probs, self.args)
+            #new_preds_q = compute_graph_matching(preds_q, prototypes, self.args)
                 
         else:
-            new_preds_q = utils.compute_basic_matching(preds_q, probs, self.args)
-            #new_preds_q = utils.compute_basic_matching(preds_q, prototypes, self.args)
+            new_preds_q = compute_basic_matching(preds_q, probs, self.args)
+            #new_preds_q = compute_basic_matching(preds_q, prototypes, self.args)
 
         accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
@@ -170,7 +170,7 @@ class FUZZY_KMEANS(BASE):
         n_task, n_support, n_ways = y_s_one_hot.shape
         #self.u = deepcopy(query)
         self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-        text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+        text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
         for task in range(n_task):
             image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
             sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K

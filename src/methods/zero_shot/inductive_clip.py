@@ -1,10 +1,10 @@
-from src.utils import get_one_hot, get_one_hot_full, Logger
+from src.utils import get_one_hot, get_one_hot_full, Logger, clip_weights, compute_graph_matching, compute_basic_matching
 from tqdm import tqdm
 import torch
 import time
 from copy import deepcopy
 import numpy as np
-from src import utils
+
 
 class BASE(object):
 
@@ -118,7 +118,7 @@ class CLIP(BASE):
             self.u = deepcopy(query)
         else:
             self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-            text_features = utils.clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+            text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
             for task in range(n_task):
                 image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
                 sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K

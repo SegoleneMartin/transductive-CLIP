@@ -1,10 +1,10 @@
-from src.utils import get_one_hot, get_one_hot_full, Logger
+from src.utils import get_one_hot, get_one_hot_full, Logger, clip_weights, compute_graph_matching, compute_basic_matching
 from tqdm import tqdm
 import torch
 import time
 from copy import deepcopy
 import numpy as np
-from src import utils
+
 
 class BASE(object):
 

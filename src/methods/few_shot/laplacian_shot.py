@@ -11,7 +11,7 @@ from scipy import sparse
 import matplotlib
 matplotlib.use('Agg')
 from sklearn.neighbors import NearestNeighbors
-from ..utils import Logger, get_one_hot
+from src.utils import Logger, get_one_hot
 
 class LAPLACIAN_SHOT(object):
     def __init__(self, model, device, log_file, args):
