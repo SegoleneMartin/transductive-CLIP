@@ -18,10 +18,9 @@ class CategoriesSampler_zero_shot():
                     [query_labels]
     """
 
-    def __init__(self, n_batch, k_eff, n_ways, s_shot, n_query, force_query_size=False):
+    def __init__(self, n_batch, k_eff, n_ways, n_query, force_query_size=False):
         self.n_batch = n_batch
         self.k_eff = k_eff
-        self.s_shot = s_shot
         self.n_query = n_query
         self.n_ways = n_ways
         self.force_query_size = force_query_size
