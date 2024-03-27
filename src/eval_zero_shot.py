@@ -134,7 +134,7 @@ class Evaluator_zero_shot:
         return method_builder
 
 
-    def evaluate_tasks(self, model, method, all_features_support, all_labels_support, all_features_query, all_labels_query):
+    def evaluate_tasks(self, model, method, all_features_query, all_labels_query):
         
         self.logger.info("=> Runnning evaluation with method {} on {} dataset".format(self.args.name_method, self.args.used_test_set))
 

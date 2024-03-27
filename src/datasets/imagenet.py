@@ -195,11 +195,6 @@ class ImageNet(DatasetBase):
         print("path", os.path.join(root, 'idx_class_name.csv'))
         with open(os.path.join(root, 'idx_class_name.csv'), mode='r') as infile:
             reader = csv.reader(infile, delimiter=',')
-            print('1')
-            #for row in reader:
-            #    print('2')
-            #    print(', '.join(row))
- 
             classes_to_label = {rows[1]:int(rows[0]) for rows in reader}
 
         self.image_dir = os.path.join(root, 'images')
