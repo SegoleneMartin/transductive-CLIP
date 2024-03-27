@@ -259,8 +259,9 @@ class HARD_EM_DIRICHLET(BASE):
             t1 = time.time()
             
             pbar.set_description(f"Criterion: {criterions}")
-            self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
             t1 = time.time()
+            self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
+            
 
         self.compute_acc_clustering(query, y_q)
 

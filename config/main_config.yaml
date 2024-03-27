@@ -1,5 +1,5 @@
 EVAL:
-    dataset: 'imagenet' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
+    dataset: 'oxfordpets' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
     method: 'em_dirichlet' #'hard_em_dirichlet', 'hard_kmeans' 'kl_kmeans', 'soft_kmeans', 'inductive_clip'
     number_tasks: 100        # Number of tasks to evaluate
     batch_size: 100

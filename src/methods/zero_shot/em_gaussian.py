@@ -203,8 +203,9 @@ class EM_GAUSSIAN(BASE):
 
             criterions = (u_old - self.u).norm(dim=(1,2)).mean(0) 
             pbar.set_description(f"Criterion: {criterions}")
-            self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
             t1 = time.time()
+            self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
+            
 
         self.compute_acc_clustering(query, y_q)
 

@@ -195,8 +195,8 @@ class FUZZY_KMEANS(BASE):
             
             if i in [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
                 pbar.set_description(f"Criterion: {criterions}")
-                self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
                 t1 = time.time()
+                self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
 
         if self.args.acc_clustering == True:
             self.compute_acc_clustering(query, y_q, support, y_s_one_hot)
