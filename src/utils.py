@@ -326,7 +326,7 @@ def load_pickle(file):
         return pickle.load(f)
     
     
-def extract_features(model, dataset, loader, set_name, args, 
+def extract_features_softmax(model, dataset, loader, set_name, args, 
                           device, list_T=[10, 20, 30, 40, 50]):
     """
         inputs:
@@ -364,11 +364,60 @@ def extract_features(model, dataset, loader, set_name, args,
                 similarity = (T * image_features @ text_features.T).softmax(dim=-1)
                 if i == 0:
                     all_features = similarity.cpu()
-                    #all_features = image_features
                     all_labels = labels.cpu()
                 else:
                     all_features = torch.cat((all_features, similarity.cpu()), dim=0)
-                    #all_features = torch.cat((all_features, image_features), dim=0)
+                    all_labels = torch.cat((all_labels, labels.cpu()), dim=0)
+
+        # Save features
+        extracted_features_dic = {'concat_features': all_features, 'concat_labels':all_labels}
+        try :
+            os.mkdir('data/{}/saved_features/'.format(args.dataset))
+        except:
+            pass
+        save_pickle(features_save_path, extracted_features_dic)
+
+
+def extract_features_visual(model, dataset, loader, set_name, args, 
+                          device, list_T=[10, 20, 30, 40, 50]):
+    """
+        inputs:
+            model : The loaded model containing the feature extractor
+            train_loader : Train data loader
+            args : arguments
+            device : GPU device
+
+        returns :
+            Saves the features in data/args.dataset/saved_features/ for T in list_T under the name 
+            '{}_visual_{}_T{}.plk'.format(set_name, args.backbone, T)
+    """
+    for T in list_T:
+        # Check if features are already saved
+        features_save_path = 'data/{}/saved_features/{}_visual_{}_T{}.plk'.format(args.dataset, set_name, args.backbone, T)
+        #features_save_path = 'data/{}/saved_features/{}_{}.plk'.format(args.dataset, set_name, args.backbone)
+        if os.path.exists(features_save_path):
+            print('Features already saved for split {} and T = {}, skipping'.format(set_name, T))
+            continue
+        else:
+            print('Extracting features on {} for T = {}'.format(args.dataset,T))
+    
+        # Create text embeddings for all classes in the dataset
+        text_features = clip_weights(model, dataset.classnames, dataset.template, device).float()
+    
+        # Extract features and labels
+        for i, (images, labels) in enumerate(tqdm(loader)):
+        
+        #for images, labels in loader:
+            images = images.to(device)
+            labels = labels.to(device)
+            with torch.no_grad():
+                image_features = model.encode_image(images).float()
+                image_features /= image_features.norm(dim=-1, keepdim=True)
+                if i == 0:
+                    all_features = image_features
+                    all_labels = labels.cpu()
+                else:
+                    all_features = torch.cat((all_features, image_features), dim=0)
                     all_labels = torch.cat((all_labels, labels.cpu()), dim=0)
 
         # Save features
