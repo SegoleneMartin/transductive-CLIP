@@ -1,6 +1,6 @@
 import torch
 
-class Tasks_Generator:
+class Tasks_Generator_zero_shot:
     def __init__(self, k_eff, n_query, n_ways, loader_query, model, args):
         """
         Initialize the Tasks_Generator.

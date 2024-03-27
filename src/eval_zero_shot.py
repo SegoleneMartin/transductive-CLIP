@@ -192,7 +192,7 @@ class Evaluator_zero_shot:
             var = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
             var_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
            
-            path = 'results_few_shot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
+            path = 'results_zero_shot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method + word, self.args.shots)
 
             if not os.path.exists(path):
