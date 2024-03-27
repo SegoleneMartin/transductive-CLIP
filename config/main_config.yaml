@@ -1,7 +1,7 @@
 EVAL:
     dataset: 'oxfordpets' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
-    method: 'em_dirichlet' #'hard_em_dirichlet', 'hard_kmeans' 'kl_kmeans', 'soft_kmeans', 'inductive_clip'
-    number_tasks: 1000        # Number of tasks to evaluate
+    method: 'hard_kmeans' #'hard_em_dirichlet', 'hard_kmeans' 'kl_kmeans', 'soft_kmeans', 'inductive_clip'
+    number_tasks: 10000        # Number of tasks to evaluate
     batch_size: 1000
     k_eff: 10                # number of different classes represented in the query
     n_query: 75            # number of samples in the query set

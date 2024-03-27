@@ -60,12 +60,9 @@ class Evaluator_zero_shot:
         extracted_features_dic_query = self.extract_and_load_features(model, dataset, data_loaders)
         all_features_query = extracted_features_dic_query['concat_features'].to('cpu')
         all_labels_query = extracted_features_dic_query['concat_labels'].long().to('cpu')
-
-        # Load the method (e.g. EM_DIRICHLET)
-        method = self.get_method_builder(model=model, device=self.device, args=self.args, log_file=self.log_file)
-
+        
         # Run evaluation for each task and collect results
-        mean_accuracies, mean_times = self.evaluate_tasks(model, method, all_features_query, all_labels_query)
+        mean_accuracies, mean_times = self.evaluate_tasks(model, all_features_query, all_labels_query)
 
         # Log final results
         self.report_results(mean_accuracies, mean_times)
@@ -134,7 +131,7 @@ class Evaluator_zero_shot:
         return method_builder
 
 
-    def evaluate_tasks(self, model, method, all_features_query, all_labels_query):
+    def evaluate_tasks(self, model, all_features_query, all_labels_query):
         
         self.logger.info("=> Runnning evaluation with method {} on {} dataset".format(self.args.name_method, self.args.used_test_set))
 
@@ -161,6 +158,9 @@ class Evaluator_zero_shot:
             task_generator = Tasks_Generator_zero_shot(k_eff=self.args.k_eff, n_ways=self.args.n_ways, n_query=self.args.n_query, loader_query=test_loader_query, model=model, args=self.args)
             tasks = task_generator.generate_tasks()
             
+            # Load the method (e.g. EM_DIRICHLET)
+            method = self.get_method_builder(model=model, device=self.device, args=self.args, log_file=self.log_file)
+        
             # Run task
             logs = method.run_task(task_dic=tasks)
             acc_mean, acc_conf = compute_confidence_interval(logs['acc'][:, -1])
@@ -168,7 +168,6 @@ class Evaluator_zero_shot:
             results_task.append(acc_mean)
             results_task_time.append(timestamps)
 
-            del method
             del tasks
 
         results.append(results_task)
