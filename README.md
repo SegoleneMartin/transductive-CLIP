@@ -2,7 +2,7 @@
 
 This GitHub repository features code from our paper where we tackle zero-shot and few-shot classification using vision-language models like CLIP. Our approach handles groups of unlabeled images together, enhancing accuracy over traditional methods that consider each image separately. We build a new classification framework based on classification of probability features and an optimization technique that mimics the Expectation-Maximization algorithm. On zero-shot tasks with test batches of 75 samples, our approaches **EM-Dirichlet** and **Hard EM-Dirichlet** yield near 20$\%$ improvement in ImageNet accuracy over CLIP's zero-shot performance. 
 
-<img src="framework.png" scale=0.8/>
+<img src="figures/framework.png" scale=0.8/>
 
 ## 1. Getting started
 
@@ -61,6 +61,8 @@ The process of extracting features might be time-consuming, but once completed, 
 ## 2. Reproducing the zero-shot results
 
 You can reproduce the results displayed in Table 1 in the paper by using the ```config/main_config.yaml``` file.
+
+<img src="figures/table_1.png" scale=0.8/>
 
 The zero-shot methods are EM-Dirichlet (```em_dirichlet```), Hard EM-Dirichlet (```hard_em_dirichlet```), Hard K-means (```hard_kmeans```), Soft K-means (```soft_kmeans```), EM-Gaussian (Id cov) (```em_gaussian```), EM-Gaussian (diagonal con) (```em_dirichlet_cov```), KL K-means (```kl_kmeans```). 
 
