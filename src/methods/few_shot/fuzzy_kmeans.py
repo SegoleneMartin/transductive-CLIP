@@ -56,7 +56,7 @@ class BASE(object):
         nonzero_clusters = cluster_sizes > self.eps
         prototypes = prototypes * nonzero_clusters 
        
-        text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+        text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device)
         probs = torch.zeros(n_task, self.args.n_ways, self.args.n_ways).to(self.device)
         for task in range(n_task):
             image_features = prototypes[task] / prototypes[task].norm(dim=-1, keepdim=True)
@@ -170,7 +170,7 @@ class FUZZY_KMEANS(BASE):
         n_task, n_support, n_ways = y_s_one_hot.shape
         #self.u = deepcopy(query)
         self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-        text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+        text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device)
         for task in range(n_task):
             image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
             sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
