@@ -7,6 +7,8 @@ results_old
 results_sim
 results_fewshot
 results_query
+results_zero_shot
+results_few_shot
 results_T_fixed_keff_auto_basic
 *.DS_Store
 scripts_old/

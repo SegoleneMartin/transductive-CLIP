@@ -98,7 +98,8 @@ class Evaluator_zero_shot:
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
         else:
             #extract_features_visual(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
-            filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
+            #filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
+            filepath_query = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
 
         extracted_features_dic_query = load_pickle(filepath_query)
 
@@ -189,11 +190,11 @@ class Evaluator_zero_shot:
     
         # if save results mode 
         if  self.args.save_results == True:
-            var = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.k_eff) 
-            var_names = 'shots' + '\t' + 'n_query' + '\t' + 'k_eff' + '\t' + 'acc' + '\n'
+            var = str(self.args.shots) + '\t' + str(self.args.n_query) + '\t' + str(self.args.number_tasks) 
+            var_names = 'shots' + '\t' + 'n_query' + '\t' + 'n_tasks' + '\t' + 'acc' + '\n'
            
             path = 'results_zero_shot/{}/{}'.format(self.args.used_test_set, self.args.dataset)
-            name_file = path + '/{}_s{}.txt'.format(self.args.name_method + word, self.args.shots)
+            name_file = path + '/{}_{}shot.txt'.format(self.args.name_method + word, self.args.shots)
 
             if not os.path.exists(path):
                 os.makedirs(path)

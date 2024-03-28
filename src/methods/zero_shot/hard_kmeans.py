@@ -46,6 +46,7 @@ class BASE(object):
         self.criterions.append(criterions)
         self.timestamps.append(new_time)
     
+    
     def compute_acc(self, y_q):
         """
         inputs:
@@ -176,9 +177,10 @@ class HARD_KMEANS(BASE):
             self.u = deepcopy(query)
         else:
             self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-            text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device).double()
+            text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device)
             for task in range(n_task):
                 image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
+                print(image_features.dtype, text_features.dtype)
                 sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
                 self.u[task] = sim
 
