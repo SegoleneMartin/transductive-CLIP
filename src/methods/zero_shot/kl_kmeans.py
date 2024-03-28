@@ -150,7 +150,8 @@ class KL_KMEANS(BASE):
                 image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
                 sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
                 self.u[task] = sim
-
+        u_old = deepcopy(self.u)
+        
         pbar = tqdm(range(self.iter))
         for i in pbar:
             t0 = time.time()

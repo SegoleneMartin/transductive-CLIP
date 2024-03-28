@@ -139,6 +139,21 @@ class EM_GAUSSIAN_COV(BASE):
         """
         self.v = torch.log(self.u.sum(1) / self.u.size(1) + self.eps) + 1
 
+        
+    def w_init(self, query):
+        """
+        Corresponds to w_k updates
+        inputs:
+            query : torch.Tensor of shape [n_task, q_shot, feature_dim]
+
+        updates :
+            self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
+        """
+
+        num = (query.unsqueeze(2) * self.u.unsqueeze(3)).sum(1)
+        den  = self.u.sum(1).clamp(min=self.eps)
+        self.w = num.div_(den.unsqueeze(2))
+        
                 
     def w_update(self, query):
         """
@@ -158,7 +173,17 @@ class EM_GAUSSIAN_COV(BASE):
         nonzero_clusters = cluster_sizes > self.eps
         self.w = num.div_(den.unsqueeze(2)) * nonzero_clusters + (self.w * (1 - 1*nonzero_clusters))
             
+    
+    def s_init(self, query):
+        """
+        inputs: query : torch.Tensor of shape [n_task, n_query, feature_dim]
 
+        updates: self.s : torch.Tensor of shape [n_task, num_class, feature_dim]
+        """
+        d_q = ((self.w.unsqueeze(1) - query.unsqueeze(2)).square_()).mul_(self.u.unsqueeze(3)).sum(1)
+        self.s = (self.u.sum(1)).unsqueeze(2) / d_q.clamp(min=self.eps) 
+        
+        
     def s_update(self, query):
         """
         inputs: query : torch.Tensor of shape [n_task, n_query, feature_dim]
@@ -198,7 +223,10 @@ class EM_GAUSSIAN_COV(BASE):
                 image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
                 sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
                 self.u[task] = sim
-
+        
+        self.w_init(query)
+        self.s_init(query)
+        
         pbar = tqdm(range(self.iter))
         for i in pbar:
             t0 = time.time()

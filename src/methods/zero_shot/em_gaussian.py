@@ -136,7 +136,22 @@ class EM_GAUSSIAN(BASE):
             --> corresponds to the log of the class proportions
         """
         self.v = torch.log(self.u.sum(1) / self.u.size(1) + self.eps) + 1
+    
+    
+    def w_init(self, query):
+        """
+        Corresponds to w_k updates
+        inputs:
+            query : torch.Tensor of shape [n_task, q_shot, feature_dim]
 
+        updates :
+            self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
+        """
+
+        num = (query.unsqueeze(2) * self.u.unsqueeze(3)).sum(1)
+        den  = self.u.sum(1).clamp(min=self.eps)
+        self.w = num.div_(den.unsqueeze(2))
+        
 
     def w_update(self, query):
         """
@@ -185,6 +200,8 @@ class EM_GAUSSIAN(BASE):
                 sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
                 self.u[task] = sim
             
+        self.w_init(query)
+        
         pbar = tqdm(range(self.iter))
         for i in pbar:
             t0 = time.time()

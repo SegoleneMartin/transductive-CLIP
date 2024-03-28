@@ -180,7 +180,6 @@ class HARD_KMEANS(BASE):
             text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device)
             for task in range(n_task):
                 image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
-                print(image_features.dtype, text_features.dtype)
                 sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
                 self.u[task] = sim
 

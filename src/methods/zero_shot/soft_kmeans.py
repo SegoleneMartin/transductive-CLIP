@@ -35,17 +35,6 @@ class BASE(object):
         self.timestamps.append(new_time)
 
 
-    def compute_acc(self, y_q):
-        """
-        inputs:
-            y_q : torch.Tensor of shape [n_task, n_query] :
-        """
-
-        preds_q = self.u.argmax(2)
-        accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
-        self.test_acc.append(accuracy)
-
-
     def compute_acc_clustering(self, query, y_q):
         n_task = query.shape[0]
         preds_q = self.u.argmax(2)
@@ -73,7 +62,7 @@ class BASE(object):
 
         accuracy = (new_preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
-
+        
 
     def get_logs(self):
         self.criterions = torch.stack(self.criterions, dim=0).cpu().numpy()
@@ -85,8 +74,7 @@ class BASE(object):
     def run_task(self, task_dic):
         """
         inputs:
-            task_dic : dictionnary with n_tasks few-shot tasks
-            shot : scalar, number of shots
+            task_dic : dictionnary with n_tasks zero-shot tasks
         """
 
         # Extract query
@@ -94,10 +82,10 @@ class BASE(object):
         query = task_dic['x_q']             # [n_task, n_query, feature_dim]
 
         # Transfer tensors to GPU if needed
-        query = query.to(self.device).float()
+        query = query.to(self.device).double()
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
-           
+        
         # Run adaptation
         self.run_method(query=query, y_q=y_q)
 
@@ -125,7 +113,7 @@ class SOFT_KMEANS(BASE):
         """
         diff = self.w.unsqueeze(1) - samples.unsqueeze(2)  # N x n x K x C
         logits = (diff.square_()).sum(dim=-1)
-        return -1 / 2 * logits  # N x n x K
+        return - 1 / 2 * logits  # N x n x K
 
     
     def u_update(self, query):
@@ -137,10 +125,19 @@ class SOFT_KMEANS(BASE):
             self.u : torch.Tensor of shape [n_task, n_query, num_class]
         """
         logits = self.get_logits(query)
-        self.u = (logits).softmax(2) 
+        self.u = (self.args.T * logits).softmax(2)
 
 
-    def w_update(self, query):
+    def v_update(self):
+        """
+        updates:
+            self.v : torch.Tensor of shape [n_task, num_class]
+            --> corresponds to the log of the class proportions
+        """
+        self.v = torch.log(self.u.sum(1) / self.u.size(1) + self.eps) + 1
+    
+    
+    def w_init(self, query):
         """
         Corresponds to w_k updates
         inputs:
@@ -150,6 +147,23 @@ class SOFT_KMEANS(BASE):
             self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
         """
 
+        num = (query.unsqueeze(2) * self.u.unsqueeze(3)).sum(1)
+        den  = self.u.sum(1).clamp(min=self.eps)
+        self.w = num.div_(den.unsqueeze(2))
+        
+
+    def w_update(self, query):
+        """
+        Corresponds to w_k updates
+        inputs:
+            support : torch.Tensor of shape [n_task, s_shot, feature_dim]
+            query : torch.Tensor of shape [n_task, q_shot, feature_dim]
+            y_s_one_hot : torch.Tensor of shape [n_task, s_shot, n_ways]
+
+        updates :
+            self.w : torch.Tensor of shape [n_task, num_class, feature_dim]
+        """
+  
         num = (query.unsqueeze(2) * self.u.unsqueeze(3)).sum(1)
         den  = self.u.sum(1).clamp(min=self.eps)
         cluster_sizes = self.u.sum(1).unsqueeze(-1)
@@ -182,17 +196,19 @@ class SOFT_KMEANS(BASE):
                 image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
                 sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
                 self.u[task] = sim
-
+            
+        self.w_init(query)
+        
         pbar = tqdm(range(self.iter))
         for i in pbar:
             t0 = time.time()
-            
+
             # Update centroids by averaging the assigned samples
             self.w_update(query)
-
+            
             # Update assignments
             self.u_update(query)
-            
+
             t1 = time.time()
             u_old = deepcopy(self.u)
 
@@ -203,5 +219,4 @@ class SOFT_KMEANS(BASE):
             
 
         self.compute_acc_clustering(query, y_q)
-       
 
