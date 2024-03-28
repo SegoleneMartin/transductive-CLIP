@@ -221,12 +221,7 @@ class HARD_EM_DIRICHLET(BASE):
         if self.args.use_softmax_feature:
             self.u = deepcopy(query)
         else:
-            self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-            text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device)
-            for task in range(n_task):
-                image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
-                sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
-                self.u[task] = sim
+            raise ValueError("The selected method is unable to handle query features that are not in the unit simplex")
         self.alpha = torch.ones((n_task, n_ways, n_ways)).to(self.device)
         alpha_old = deepcopy(self.alpha)
         t0 = time.time()

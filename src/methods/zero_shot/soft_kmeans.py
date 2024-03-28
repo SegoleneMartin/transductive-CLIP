@@ -82,7 +82,7 @@ class BASE(object):
         query = task_dic['x_q']             # [n_task, n_query, feature_dim]
 
         # Transfer tensors to GPU if needed
-        query = query.to(self.device).double()
+        query = query.to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
         

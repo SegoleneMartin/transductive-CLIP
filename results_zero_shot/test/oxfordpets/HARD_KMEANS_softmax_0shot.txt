@@ -1,3 +1,0 @@
-shots	n_query	n_tasks	acc
-	
-0	75	1000	62.8	

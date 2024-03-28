@@ -111,7 +111,7 @@ class BASE(object):
         query = task_dic['x_q']             # [n_task, n_query, feature_dim]
 
         # Transfer tensors to GPU if needed
-        query = query.to(self.device).float()
+        query = query.to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
                    
@@ -196,7 +196,7 @@ class EM_DIRICHLET(BASE):
 
         self.logger.info(" ==> Executing EM-DIRICHLET with LAMBDA = {} and T = {}".format(self.lambd, self.args.T))
         
-        self.zero_value = torch.polygamma(1, torch.Tensor([1]).to(self.device)).float() #.double()
+        self.zero_value = torch.polygamma(1, torch.Tensor([1]).to(self.device)).float()
         self.log_gamma_1 = torch.lgamma(torch.Tensor([1]).to(self.device)).float() 
         n_task, n_ways = query.shape[0], self.args.num_classes_test
         
@@ -205,12 +205,7 @@ class EM_DIRICHLET(BASE):
         if self.args.use_softmax_feature:
             self.u = deepcopy(query)
         else:
-            self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-            text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device)
-            for task in range(n_task):
-                image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
-                sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
-                self.u[task] = sim
+            raise ValueError("The selected method is unable to handle query features that are not in the unit simplex")
         self.alpha = torch.ones((n_task, n_ways, n_ways)).to(self.device)
         alpha_old = deepcopy(self.alpha)
         t0 = time.time()
@@ -219,7 +214,7 @@ class EM_DIRICHLET(BASE):
         for i in pbar:
 
             # update of dirichlet parameter alpha
-            cluster_sizes = self.u.sum(dim=1).unsqueeze(-1).float()#.double() # N x K  
+            cluster_sizes = self.u.sum(dim=1).unsqueeze(-1).float() # N x K  
             nonzero_clusters = cluster_sizes > self.eps
             y_cst = ((self.u.unsqueeze(-1) * torch.log(query + self.eps).unsqueeze(2)).sum(1)) / (self.u.sum(1).clamp(min=self.eps).unsqueeze(-1))
             y_cst = y_cst * nonzero_clusters + (1 - 1*nonzero_clusters) * torch.ones_like(y_cst) * (-10)

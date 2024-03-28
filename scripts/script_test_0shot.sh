@@ -3,7 +3,7 @@ used_test_set='test'
 s=0
 device=0
 ######
-for method in soft_kmeans em_gaussian_cov hard_em_dirichlet em_dirichlet kl_kmeans em_gaussian hard_kmeans
+for method in soft_kmeans em_gaussian_cov hard_em_dirichlet em_dirichlet kl_kmeans em_gaussian hard_kmeans clip_inductive
 do
 for dataset in caltech101 dtd oxfordpets
 do
