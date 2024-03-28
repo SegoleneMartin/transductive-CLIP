@@ -70,7 +70,7 @@ The methods can be tested on the softmax features by setting ```use_softmax_feat
 
 For example, to run the method EM-Dirichlet on Caltech101 on 1000 realistic tranductive zero-shot tasks: 
 ```python
-python main.py --shots 0 dataset caltech101 batch_size 100 number_tasks 1000 use_softmax_feature True
+python main.py --opts shots 0 dataset caltech101 batch_size 100 number_tasks 1000 use_softmax_feature True
 ```
 
 ## 3. Reproducing the few-shot results
