@@ -2,7 +2,7 @@
 
 This GitHub repository features code from our paper where we tackle zero-shot and few-shot classification using vision-language models like CLIP. Our approach handles groups of unlabeled images together, enhancing accuracy over traditional methods that consider each image separately. We build a new classification framework based on classification of probability features and an optimization technique that mimics the Expectation-Maximization algorithm. On zero-shot tasks with test batches of 75 samples, our approaches **EM-Dirichlet** and **Hard EM-Dirichlet** yield near 20$\%$ improvement in ImageNet accuracy over CLIP's zero-shot performance. 
 
-<img src="framework.pdf" scale=0.8/>
+<img src="framework.png" scale=0.8/>
 
 ## 1. Getting started
 
