@@ -50,7 +50,8 @@ class Evaluator_few_shot:
         dataset = dataset_list[self.args.dataset](self.args.dataset_path)
         self.args.classnames = dataset.classnames
         self.args.template = dataset.template
-        data_loaders = self.initialize_data_loaders(dataset, preprocess)
+        #data_loaders = self.initialize_data_loaders(dataset, preprocess)
+        data_loaders = None
 
         # Extract and load features
         extracted_features_dic_support, extracted_features_dic_query = self.extract_and_load_features(model, dataset, data_loaders)
@@ -59,13 +60,8 @@ class Evaluator_few_shot:
         all_features_query = extracted_features_dic_query['concat_features'].to('cpu')
         all_labels_query = extracted_features_dic_query['concat_labels'].long().to('cpu')
 
-        # Load the method (e.g. EM_DIRICHLET)
-        method = self.get_method_builder(model=model, device=self.device, args=self.args, log_file=self.log_file)
-        if self.args.used_test_set == 'test' and self.args.tunable: # set the optimal parameter for the method if the test set is used
-            self.set_method_opt_param()
-
         # Run evaluation for each task and collect results
-        mean_accuracies, mean_times = self.evaluate_tasks(model, method, all_features_support, all_labels_support, all_features_query, all_labels_query)
+        mean_accuracies, mean_times = self.evaluate_tasks(model, all_features_support, all_labels_support, all_features_query, all_labels_query)
 
         # Log final results
         self.report_results(mean_accuracies, mean_times)
@@ -97,16 +93,16 @@ class Evaluator_few_shot:
 
         # Load the features: either the softmax features, either the visual embeddings
         if self.args.use_softmax_feature == True:
-            extract_features_softmax(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
-            extract_features_softmax(model, dataset, data_loaders['val'], 'val', self.args, self.device, list_T=[self.args.T])
-            extract_features_softmax(model, dataset, data_loaders['train'], 'train', self.args, self.device, list_T=[self.args.T])
+            #extract_features_softmax(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
+            #extract_features_softmax(model, dataset, data_loaders['val'], 'val', self.args, self.device, list_T=[self.args.T])
+            #extract_features_softmax(model, dataset, data_loaders['train'], 'train', self.args, self.device, list_T=[self.args.T])
             
             filepath_support = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone, self.args.T)
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
         else:
-            extract_features_visual(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
-            extract_features_visual(model, dataset, data_loaders['val'], 'val', self.args, self.device, list_T=[self.args.T])
-            extract_features_visual(model, dataset, data_loaders['train'], 'train', self.args, self.device, list_T=[self.args.T])
+            #extract_features_visual(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
+            #extract_features_visual(model, dataset, data_loaders['val'], 'val', self.args, self.device, list_T=[self.args.T])
+            #extract_features_visual(model, dataset, data_loaders['train'], 'train', self.args, self.device, list_T=[self.args.T])
             
             filepath_support = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone)
             filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
@@ -146,11 +142,11 @@ class Evaluator_few_shot:
                 word = '_softmax'
         else:
             word = '_visual'
-        path = 'results_T_fixed_fewshot/val/{}'.format(self.args.dataset)
+        path = 'results_few_shot/val/{}'.format(self.args.dataset)
         name_file = path + '/{}_s{}.txt'.format(self.args.name_method + word, self.args.shots)
         
         if self.args.dataset == 'imagenet': # for imagenet we use the val set of the caltech101 dataset to tune the parameter
-            path = 'results_T_fixed_fewshot/val/{}'.format('caltech101')
+            path = 'results_few_shot/val/{}'.format('caltech101')
             name_file = path + '/{}_s{}.txt'.format(self.args.name_method + word, self.args.shots)
             
         try:
@@ -196,7 +192,7 @@ class Evaluator_few_shot:
         return method_builder
 
 
-    def evaluate_tasks(self, model, method, all_features_support, all_labels_support, all_features_query, all_labels_query):
+    def evaluate_tasks(self, model, all_features_support, all_labels_support, all_features_query, all_labels_query):
         
         self.logger.info("=> Runnning evaluation with method {} on {} dataset".format(self.args.name_method, self.args.used_test_set))
 
@@ -228,6 +224,11 @@ class Evaluator_few_shot:
             task_generator = Tasks_Generator_few_shot(k_eff=self.args.k_eff, n_ways=self.args.n_ways, shot=self.args.shot, n_query=self.args.n_query, loader_support=test_loader_support, loader_query=test_loader_query, model=model, args=self.args)
             tasks = task_generator.generate_tasks()
             
+            # Load the method (e.g. EM_DIRICHLET)
+            method = self.get_method_builder(model=model, device=self.device, args=self.args, log_file=self.log_file)
+            if self.args.used_test_set == 'test' and self.args.tunable: # set the optimal parameter for the method if the test set is used
+                self.set_method_opt_param()
+
             # Run task
             logs = method.run_task(task_dic=tasks, shot=self.args.shot)
             acc_mean, acc_conf = compute_confidence_interval(logs['acc'][:, -1])

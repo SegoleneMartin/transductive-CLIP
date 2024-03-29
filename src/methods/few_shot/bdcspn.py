@@ -15,13 +15,16 @@ class BDCSPN(object):
         self.logger = Logger(__name__, self.log_file)
         self.init_info_lists()
 
+
     def __del__(self):
         self.logger.del_logger()
+
 
     def init_info_lists(self):
         self.timestamps = []
         self.criterions = []
         self.test_acc = []
+
 
     def record_convergence(self, new_time, criterions):
         """
@@ -31,6 +34,7 @@ class BDCSPN(object):
         """
         self.criterions.append(criterions)
         self.timestamps.append(new_time)
+
 
     def get_logits(self, w, samples):
         """
@@ -49,6 +53,7 @@ class BDCSPN(object):
         logits = (diff.square_()).sum(dim=-1)
         return - 1 / 2 * logits  # N x n x K
     
+
     def compute_acc(self, y_q, preds_q):
         """
         inputs:
@@ -56,6 +61,7 @@ class BDCSPN(object):
         """
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
+
 
     def get_logs(self):
         self.criterions = torch.stack(self.criterions, dim=0).detach().cpu().numpy()
@@ -87,6 +93,7 @@ class BDCSPN(object):
             z_q = z_q / z_q.norm(p=2, dim=2, keepdim=True)
         
         return z_s, z_q
+
 
     def proto_rectification(self, support, query, y_s, shot):
         """
@@ -144,8 +151,8 @@ class BDCSPN(object):
         query = task_dic['x_q']             # [n_task, n_query, feature_dim]
 
         # Transfer tensors to GPU if needed
-        support = support.to(self.device).float() #.double()
-        query = query.to(self.device).float() #.double()
+        support = support.to(self.device)
+        query = query.to(self.device)
         y_s = y_s.long().squeeze(2).to(self.device)
         y_q = y_q.long().squeeze(2).to(self.device)
         train_mean = support.mean(1)
@@ -185,4 +192,3 @@ class BDCSPN(object):
         self.record_convergence(new_time=t1-t0, criterions=torch.zeros(1).to(self.device))
             
         self.compute_acc(y_q, preds_q)
-        return preds_q

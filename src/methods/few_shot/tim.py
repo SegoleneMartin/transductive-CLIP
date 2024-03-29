@@ -142,7 +142,7 @@ class TIM_GD(BASE):
             self.weights : torch.Tensor of shape [n_task, num_class, feature_dim]
         """
          
-        self.logger.info(" ==> Executing TIM")
+        self.logger.info(" ==> Executing TIM with T = {}".format(self.args.T))
         self.init_weights(support=support, y_s=y_s, query=query)
 
         n_task = support.shape[0]
@@ -168,22 +168,14 @@ class TIM_GD(BASE):
             loss.backward()
             optimizer.step()
             
-            #t1 = time.time()
-            if i in [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-                weight_diff = (weights_old - self.weights).norm(dim=-1).mean(-1)
-                criterions = weight_diff
-                self.record_convergence(new_time=t1-t0, criterions=criterions)
-                pbar.set_description(f"Criterion: {criterions}")
-                #self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
-                #t1 = time.time()
+            weight_diff = (weights_old - self.weights).norm(dim=-1).mean(-1)
+            criterions = weight_diff
+            pbar.set_description(f"Criterion: {criterions}")
+            t1 = time.time()
+            self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
 
-        t1 = time.time()
         self.model.eval()
-        self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
-        if self.args.acc_clustering == True:
-            self.compute_acc_clustering(query, y_q, support, y_s_one_hot)
-        else:
-            self.compute_acc(y_q=y_q, logits_q=logits_q)
+        self.compute_acc(y_q=y_q, logits_q=logits_q)
 
 
 class ALPHA_TIM(BASE):
@@ -246,7 +238,7 @@ class ALPHA_TIM(BASE):
         updates :
             self.weights : torch.Tensor of shape [n_task, num_class, feature_dim]
         """
-        self.logger.info(" ==> Executing ALPHA_TIM")
+        self.logger.info(" ==> Executing ALPHA_TIM with ALPHA = {} and T = {}".format(self.alpha_value, self.args.T))
         self.init_weights(support=support, y_s=y_s, query=query)
         
         self.weights.requires_grad_()
@@ -297,16 +289,11 @@ class ALPHA_TIM(BASE):
 
             #t1 = time.time()
 
-            if i in [0, 1, 2, 3, 4, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100]:
-                weight_diff = (weights_old - self.weights.detach()).norm(dim=-1).mean()
-                pbar.set_description(f"Criterion: {weight_diff}")
-                #self.record_convergence(new_time=(t1-t0) / n_task, criterions=weight_diff)
-                #t1 = time.time()
+            weight_diff = (weights_old - self.weights.detach()).norm(dim=-1).mean()
+            criterions = weight_diff
+            pbar.set_description(f"Criterion: {criterions}")
+            t1 = time.time()
+            self.record_convergence(new_time=(t1-t0) / n_task, criterions=criterions)
 
-        t1 = time.time()
         self.model.eval()
-        self.record_convergence(new_time=(t1-t0) / n_task, criterions=weight_diff)
-        if self.args.acc_clustering == True:
-            self.compute_acc_clustering(query, y_q, support, y_s_one_hot)
-        else:
-            self.compute_acc(y_q=y_q, logits_q=logits_q)
+        self.compute_acc(y_q=y_q, logits_q=logits_q)
