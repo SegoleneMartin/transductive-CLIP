@@ -20,7 +20,7 @@ class CategoriesSampler_few_shot():
                                [support_labels, query_labels]
     """
 
-    def __init__(self, n_batch, k_eff, n_ways, s_shot, n_query, force_query_size=False):
+    def __init__(self, n_batch, k_eff, n_ways, s_shot, n_query, force_query_size=False): 
         self.n_batch = n_batch                      # the number of iterations in the dataloader
         self.k_eff = k_eff
         self.s_shot = s_shot
@@ -88,7 +88,7 @@ class SamplerQuery_few_shot:
             query_size = 0
             n_trials = 0
             while query_size < self.n_query and n_trials < 1:
-                classes = self.list_classes[torch.randperm(len(self.list_classes))[:self.k_eff]]
+                classes = [self.list_classes[i] for i in torch.randperm(len(self.list_classes))[:self.k_eff].tolist()]
                 query = []
 
                 complete_possible_samples = self.m_ind_query[classes[0]]

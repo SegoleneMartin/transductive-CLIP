@@ -1,11 +1,11 @@
 EVAL:
     dataset: 'oxfordpets' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
-    method: 'inductive_clip' #'hard_em_dirichlet', 'hard_kmeans' 'kl_kmeans', 'soft_kmeans', 'inductive_clip'
-    number_tasks: 1000        # Number of tasks to evaluate
-    batch_size: 1000
+    method: 'paddle' #'hard_em_dirichlet', 'hard_kmeans' 'kl_kmeans', 'soft_kmeans', 'inductive_clip'
+    number_tasks: 5        # Number of tasks to evaluate
+    batch_size: 5
     k_eff: 10              # number of different classes represented in the query
     n_query: 75            # number of samples in the query set
-    shots: 0              # number of shots
+    shots: 4              # number of shots
     log_path: '.log/'
     save_results: True
     used_test_set: 'test'   # 'val' or 'test'
@@ -13,4 +13,4 @@ EVAL:
     T: 30                    # temperature for defining the features
     backbone: 'RN50'        # CLIP's pretrained backbone
     lambd_opt: True        # keep it to this value, will probably be removed soon
-    use_softmax_feature: False
+    use_softmax_feature: True

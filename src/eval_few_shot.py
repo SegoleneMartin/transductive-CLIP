@@ -97,14 +97,14 @@ class Evaluator_few_shot:
             #extract_features_softmax(model, dataset, data_loaders['val'], 'val', self.args, self.device, list_T=[self.args.T])
             #extract_features_softmax(model, dataset, data_loaders['train'], 'train', self.args, self.device, list_T=[self.args.T])
             
-            filepath_support = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone, self.args.T)
+            filepath_support = 'data/{}/saved_features/train_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.backbone, self.args.T)
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
         else:
             #extract_features_visual(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
             #extract_features_visual(model, dataset, data_loaders['val'], 'val', self.args, self.device, list_T=[self.args.T])
             #extract_features_visual(model, dataset, data_loaders['train'], 'train', self.args, self.device, list_T=[self.args.T])
             
-            filepath_support = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_train_set, self.args.backbone)
+            filepath_support = 'data/{}/saved_features/train_visual_{}.plk'.format(self.args.dataset, self.args.backbone)
             filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
 
         extracted_features_dic_support = load_pickle(filepath_support)
@@ -137,7 +137,7 @@ class Evaluator_few_shot:
             self.args.temp = opt_param
 
 
-    def set_method_opt_param(self, opt_param):
+    def set_method_opt_param(self):
         if self.args.use_softmax_feature == True:
                 word = '_softmax'
         else:
@@ -205,7 +205,7 @@ class Evaluator_few_shot:
         for i in range(int(self.args.number_tasks/self.args.batch_size)):
 
             # Create sampler for transductive few-shot tasks
-            sampler = CategoriesSampler_few_shot(all_labels_support, all_labels_query, self.args.batch_size,
+            sampler = CategoriesSampler_few_shot(self.args.batch_size,
                                     self.args.k_eff, self.args.n_ways, self.args.shots, self.args.n_query, force_query_size=True)
             sampler.create_list_classes(all_labels_support, all_labels_query)
             sampler_support = SamplerSupport_few_shot(sampler)
@@ -221,7 +221,7 @@ class Evaluator_few_shot:
                 test_loader_support.append((all_features_support[indices,:], all_labels_support[indices]))
             
             # Prepare the tasks
-            task_generator = Tasks_Generator_few_shot(k_eff=self.args.k_eff, n_ways=self.args.n_ways, shot=self.args.shot, n_query=self.args.n_query, loader_support=test_loader_support, loader_query=test_loader_query, model=model, args=self.args)
+            task_generator = Tasks_Generator_few_shot(k_eff=self.args.k_eff, shot=self.args.shots, n_query=self.args.n_query, n_ways=self.args.n_ways, loader_support=test_loader_support, loader_query=test_loader_query, model=model, args=self.args)
             tasks = task_generator.generate_tasks()
             
             # Load the method (e.g. EM_DIRICHLET)
@@ -230,7 +230,7 @@ class Evaluator_few_shot:
                 self.set_method_opt_param()
 
             # Run task
-            logs = method.run_task(task_dic=tasks, shot=self.args.shot)
+            logs = method.run_task(task_dic=tasks, shot=self.args.shots)
             acc_mean, acc_conf = compute_confidence_interval(logs['acc'][:, -1])
             timestamps, criterions = logs['timestamps'], logs['criterions']
             results_task.append(acc_mean)
