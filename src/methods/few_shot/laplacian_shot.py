@@ -52,7 +52,7 @@ class LAPLACIAN_SHOT(object):
         self.test_acc = torch.stack(self.test_acc, dim=0).squeeze(2).cpu().numpy()
         self.ent_energy = np.array(self.ent_energy)
         self.timestamps = np.array(self.timestamps).mean()
-        return {'timestamps': self.timestamps,
+        return {'timestamps': np.array(self.timestamps).mean(),
                 'acc': self.test_acc,
                 'ent_energy': self.ent_energy,
                 'criterions': self.criterions}

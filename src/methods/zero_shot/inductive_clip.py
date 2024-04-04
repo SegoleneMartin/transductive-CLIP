@@ -58,7 +58,7 @@ class BASE(object):
     def get_logs(self):
         self.criterions = torch.stack(self.criterions, dim=0).cpu().numpy()
         self.test_acc = torch.cat(self.test_acc, dim=1).cpu().numpy()
-        return {'timestamps': self.timestamps, 'criterions':self.criterions,
+        return {'timestamps': np.array(self.timestamps).mean(), 'criterions':self.criterions,
                 'acc': self.test_acc}
 
 
