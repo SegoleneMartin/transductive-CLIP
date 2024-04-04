@@ -104,8 +104,10 @@ class Evaluator_few_shot:
             #extract_features_visual(model, dataset, data_loaders['val'], 'val', self.args, self.device, list_T=[self.args.T])
             #extract_features_visual(model, dataset, data_loaders['train'], 'train', self.args, self.device, list_T=[self.args.T])
             
-            filepath_support = 'data/{}/saved_features/train_visual_{}.plk'.format(self.args.dataset, self.args.backbone)
-            filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
+            #filepath_support = 'data/{}/saved_features/train_visual_{}.plk'.format(self.args.dataset, self.args.backbone)
+            #filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
+            filepath_support = 'data/{}/saved_features/train_{}.plk'.format(self.args.dataset, self.args.backbone)
+            filepath_query = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
 
         extracted_features_dic_support = load_pickle(filepath_support)
         extracted_features_dic_query = load_pickle(filepath_query)
@@ -161,6 +163,7 @@ class Evaluator_few_shot:
             list_acc = np.array(list_acc)
             index = np.argwhere(list_acc == np.amax(list_acc))[-1][0]
             opt_param = list_param[index]
+            print('opt param', opt_param)
             self.set_value_opt_param(opt_param)
             f.close()
             
@@ -239,10 +242,8 @@ class Evaluator_few_shot:
             del method
             del tasks
 
-        results.append(results_task)
-        results_time.append(results_task_time)
-        mean_accuracies = np.asarray(results).mean(1)
-        mean_times = np.asarray(results_time).mean(1)
+        mean_accuracies = np.asarray(results_task).mean()
+        mean_times = np.asarray(results_task_time).mean()
 
         return mean_accuracies, mean_times
     
@@ -272,7 +273,7 @@ class Evaluator_few_shot:
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies[0]))
             
             f.write(str(self.val_param) + '\t')
-            f.write(str(round(100 * mean_accuracies[0], 2)) + '\t' )
+            f.write(str(round(100 * mean_accuracies, 2)) + '\t' )
             f.write('\n')
             f.close()
     
@@ -292,16 +293,16 @@ class Evaluator_few_shot:
                 f = open(name_file, 'w')
                 f.write(var_names +'\t' + '\n')
                 
-            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies[0]))
-            self.logger.info('{}-shot mean time over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_times[0][0]))
+            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies))
+            self.logger.info('{}-shot mean time over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_times))
             f.write(str(var)+'\t')
-            f.write(str(round(100 * mean_accuracies[0], 1)) +'\t' )
+            f.write(str(round(100 * mean_accuracies, 1)) +'\t' )
             f.write('\n')
             f.close()
             
         else:
-            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies[0]))
-            self.logger.info('{}-shot mean time over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_times[0][0]))
+            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies))
+            self.logger.info('{}-shot mean time over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_times))
             
     
     

@@ -5,6 +5,6 @@ METHOD:
   lr_alpha_tim: 1e-4
   iter: 1000
   entropies: ['Shannon', 'Alpha', 'Alpha'] # [Xent, H(Y), H(Y|X)]
-  alpha_values: 7.0 # [Xent, H(Y), H(Y|X)]
+  alpha_value: 7.0 
   acc_clustering: False
   tunable: True

@@ -3,7 +3,7 @@ number_tasks=5
 batch_size=5
 k_eff=5
 used_test_set='val'
-use_softmax_features=True
+use_softmax_features=False
 ######
 for dataset in food101 # sun397 caltech101 ucf101 flowers102 dtd eurosat fgvcaircraft oxfordpets sun397 stanfordcars
 do
@@ -25,7 +25,7 @@ do
 python main.py --opts method paddle batch_size ${batch_size} number_tasks ${number_tasks} dataset ${dataset} lambd ${lambd} shots ${s} n_query ${n_query} k_eff ${k_eff} save_results True seed 0 used_test_set ${used_test_set} use_softmax_feature ${use_softmax_features}
 done
 ## laplacian_shot
-for lmd in 0.1 0.5 1.0 2.0 3.0 4.0 5.0 6.0 7.0
+for lmd in 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0
 do
 python main.py --opts method laplacian_shot batch_size ${batch_size} number_tasks ${number_tasks} dataset ${dataset} lmd ${lmd} shots ${s} n_query ${n_query} k_eff ${k_eff} save_results True seed 0 used_test_set ${used_test_set} use_softmax_feature ${use_softmax_features}
 done
