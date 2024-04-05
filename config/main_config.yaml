@@ -1,12 +1,12 @@
 EVAL:
     dataset: 'oxfordpets'           # Choose from: oxfordpets, eurosat, ucf101, caltech101, dtd, fgvcaircraft, food101, flowers102, stanfordcars, imagenet, sun397
-    method: 'paddle'       # For zero-shot: 'em_dirichlet', 'hard_em_dirichlet', 'hard_kmeans', 'kl_kmeans', 'soft_kmeans', 'em_gaussian', 'em_gaussian_cov', 'inductive_clip'
+    method: 'soft_kmeans'       # For zero-shot: 'em_dirichlet', 'hard_em_dirichlet', 'hard_kmeans', 'kl_kmeans', 'soft_kmeans', 'em_gaussian', 'em_gaussian_cov', 'inductive_clip'
                                  # For few-shot: 'em_dirichlet', 'hard_em_dirichlet', 'paddle', 'alpha_tim', 'laplacian_shot', 'bdcspn'
     number_tasks: 5              # Number of tasks to evaluate
     batch_size: 5                # Batch size for the evaluation
-    k_eff: 10                    # Number of different classes represented in the query
+    k_eff: 5                     # Number of different classes represented in the query
     n_query: 75                  # Number of samples in the query set
-    shots: 4                     # Number of shots
+    shots: 0                     # Number of shots
     log_path: '.log/'
     save_results: False           # Save the results in a .txt file in results_zero_shot/ and results_few_shot/
     used_test_set: 'test'        # Choose between 'val' or 'test'

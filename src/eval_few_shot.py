@@ -113,8 +113,6 @@ class Evaluator_few_shot:
 
             filepath_support = 'data/{}/saved_features/train_visual_{}.plk'.format(self.args.dataset, self.args.backbone)
             filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
-            #filepath_support = 'data/{}/saved_features/train_{}.plk'.format(self.args.dataset, self.args.backbone)
-            #filepath_query = 'data/{}/saved_features/{}_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
 
         extracted_features_dic_support = load_pickle(filepath_support)
         extracted_features_dic_query = load_pickle(filepath_query)

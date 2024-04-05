@@ -54,8 +54,7 @@ class Evaluator_zero_shot:
         dataset = dataset_list[self.args.dataset](self.args.dataset_path)
         self.args.classnames = dataset.classnames
         self.args.template = dataset.template
-        # data_loaders = self.initialize_data_loaders(dataset, preprocess)
-        data_loaders = None
+        data_loaders = self.initialize_data_loaders(dataset, preprocess)
 
         # Extract and load features
         extracted_features_dic_query = self.extract_and_load_features(
@@ -81,8 +80,8 @@ class Evaluator_zero_shot:
         """
         batch_size = 1024
         data_loaders = {
-            # 'train': build_data_loader(data_source=dataset.train_x, batch_size=batch_size, is_train=False, shuffle=False, tfm=preprocess),
-            # 'val': build_data_loader(data_source=dataset.val, batch_size=batch_size, is_train=False, shuffle=False, tfm=preprocess),
+            'train': build_data_loader(data_source=dataset.train_x, batch_size=batch_size, is_train=False, shuffle=False, tfm=preprocess),
+            'val': build_data_loader(data_source=dataset.val, batch_size=batch_size, is_train=False, shuffle=False, tfm=preprocess),
             'test': build_data_loader(data_source=dataset.test, batch_size=batch_size, is_train=False, shuffle=False, tfm=preprocess)
         }
         return data_loaders
@@ -97,14 +96,12 @@ class Evaluator_zero_shot:
 
         # Load the features: either the softmax features, either the visual embeddings
         if self.args.use_softmax_feature == True:
-            # extract_features_softmax(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
+            extract_features_softmax(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(
                 self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
         else:
-            # extract_features_visual(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
-            # filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
-            filepath_query = 'data/{}/saved_features/{}_{}.plk'.format(
-                self.args.dataset, self.args.used_test_set, self.args.backbone)
+            extract_features_visual(model, dataset, data_loaders['test'], 'test', self.args, self.device)
+            filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
 
         extracted_features_dic_query = load_pickle(filepath_query)
 
@@ -181,10 +178,8 @@ class Evaluator_zero_shot:
 
             del tasks
 
-        results.append(results_task)
-        results_time.append(results_task_time)
-        mean_accuracies = np.asarray(results).mean(1)
-        mean_times = np.asarray(results_time).mean(1)
+        mean_accuracies = np.asarray(results_task).mean()
+        mean_times = np.asarray(results_task_time).mean()
 
         return mean_accuracies, mean_times
 
@@ -219,16 +214,16 @@ class Evaluator_zero_shot:
                 f.write(var_names + '\t' + '\n')
 
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(
-                self.args.shots, self.args.number_tasks, mean_accuracies[0]))
+                self.args.shots, self.args.number_tasks, mean_accuracies))
             self.logger.info('{}-shot mean time over {} tasks: {}'.format(
-                self.args.shots, self.args.number_tasks, mean_times[0][0]))
+                self.args.shots, self.args.number_tasks, mean_times))
             f.write(str(var)+'\t')
-            f.write(str(round(100 * mean_accuracies[0], 1)) + '\t')
+            f.write(str(round(100 * mean_accuracies, 1)) + '\t')
             f.write('\n')
             f.close()
 
         else:
             self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(
-                self.args.shots, self.args.number_tasks, mean_accuracies[0]))
+                self.args.shots, self.args.number_tasks, mean_accuracies))
             self.logger.info('{}-shot mean time over {} tasks: {}'.format(
-                self.args.shots, self.args.number_tasks, mean_times[0][0]))
+                self.args.shots, self.args.number_tasks, mean_times))
