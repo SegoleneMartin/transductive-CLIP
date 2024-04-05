@@ -16,7 +16,6 @@ class StanfordCars(DatasetBase):
         self.template = template
 
         train, val, test = OxfordPets.read_split(self.split_path, root)
-        #train = self.generate_fewshot_dataset(train, num_shots=num_shots)
 
         super().__init__(train_x=train, val=val, test=test)
     

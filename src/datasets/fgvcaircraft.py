@@ -24,9 +24,7 @@ class FGVCAircraft(DatasetBase):
         train = self.read_data(cname2lab, 'images_variant_train.txt')
         val = self.read_data(cname2lab, 'images_variant_val.txt')
         test = self.read_data(cname2lab, 'images_variant_test.txt')
-        
-        #train = self.generate_fewshot_dataset(train, num_shots=num_shots)
-        
+                
         super().__init__(train_x=train, val=val, test=test)
     
     def read_data(self, cname2lab, split_file):

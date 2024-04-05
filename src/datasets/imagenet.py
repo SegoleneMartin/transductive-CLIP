@@ -205,18 +205,12 @@ class ImageNet(DatasetBase):
                                                 transforms.ToTensor(),
                                                 transforms.Normalize(mean=(0.48145466, 0.4578275, 0.40821073), std=(0.26862954, 0.26130258, 0.27577711))
                                             ])
-
-        #train = torchvision.datasets.ImageNet(self.image_dir, split='train', transform=train_preprocess)
-        #val = torchvision.datasets.ImageNet(self.image_dir, split='val')
-        #test = torchvision.datasets.ImageNet(self.image_dir, split='val')
         
         self.template = imagenet_template
 
         train = self.read_data(root, 'train.txt', 'train', classes_to_label)
         test = self.read_data(root, 'val.txt', 'val', classes_to_label)
-        
-        #train = self.generate_fewshot_dataset(train, num_shots=num_shots)
-        
+                
         super().__init__(train_x=train, test=test)
     
     def read_data(self, root, split_file, folder_name, classes_to_label):
