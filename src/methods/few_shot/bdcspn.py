@@ -108,8 +108,7 @@ class BDCSPN(object):
                                  feature_dim, device=query.device)
 
         # Compute initial prototypes by averaging support features per class
-        n_class = self.args.num_classes_test
-        y_s_one_hot = get_one_hot(y_s, n_class)
+        y_s_one_hot = get_one_hot(y_s, self.n_class)
         counts = (y_s_one_hot.sum(1)).unsqueeze(-1)
         weights = (y_s_one_hot.unsqueeze(-1) * (support.unsqueeze(2))).sum(1)
         init_prototypes = weights.div_(counts)
