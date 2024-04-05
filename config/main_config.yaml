@@ -1,6 +1,6 @@
 EVAL:
     dataset: 'food101' # oxfordpets eurosat ucf101 caltech101 dtd fgvcaircraft food101 flowers102 stanfordcars
-    method: 'laplacian_shot' # zero-shot: 'em_dirichlet', 'hard_em_dirichlet', 'hard_kmeans' 'kl_kmeans', 'soft_kmeans', 'inductive_clip'
+    method: 'em_dirichlet' # zero-shot: 'em_dirichlet', 'hard_em_dirichlet', 'hard_kmeans' 'kl_kmeans', 'soft_kmeans', 'inductive_clip'
                         # few-shot: 'em_dirichlet', hard_em_dirichlet', 'paddle', 'alpha_tim', 'laplacian_shot', 'bdcspn'
     number_tasks: 5        # Number of tasks to evaluate
     batch_size: 5

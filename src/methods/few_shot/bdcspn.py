@@ -3,6 +3,7 @@ from tqdm import tqdm
 import torch
 from src.utils import Logger, get_one_hot
 import time
+import numpy as np
 
 class BDCSPN(object):
     def __init__(self, model, device, log_file, args):

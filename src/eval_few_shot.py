@@ -270,7 +270,7 @@ class Evaluator_few_shot:
                 f = open(name_file, 'w')
                 f.write('val_param' + '\t' + 'acc' + '\n')
                 
-            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies[0]))
+            self.logger.info('{}-shot mean test accuracy over {} tasks: {}'.format(self.args.shots, self.args.number_tasks, mean_accuracies))
             
             f.write(str(self.val_param) + '\t')
             f.write(str(round(100 * mean_accuracies, 2)) + '\t' )

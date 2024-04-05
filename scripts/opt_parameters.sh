@@ -3,11 +3,11 @@ number_tasks=5
 batch_size=5
 k_eff=5
 used_test_set='val'
-use_softmax_features=False
+use_softmax_features=True
 ######
-for dataset in food101 # sun397 caltech101 ucf101 flowers102 dtd eurosat fgvcaircraft oxfordpets sun397 stanfordcars
+for dataset in food101 sun397 caltech101 ucf101 flowers102 dtd eurosat fgvcaircraft oxfordpets sun397 stanfordcars
 do
-for s in 4 #1 2 4 8 16
+for s in 1 2 4 8 16
 do
 ## alpha_tim
 for alpha_value in 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0
