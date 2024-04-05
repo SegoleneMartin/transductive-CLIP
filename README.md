@@ -8,7 +8,7 @@ This GitHub repository features code from our paper where we tackle zero-shot an
 
 ### 1.1. Requirements
 
-- pytorch 1.7 (or later)
+- torch 1.13.1 (or later)
 - torchvision 
 - tqdm
 - numpy

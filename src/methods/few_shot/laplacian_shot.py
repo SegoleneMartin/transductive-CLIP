@@ -35,6 +35,7 @@ class LAPLACIAN_SHOT(object):
         self.criterions = []
         self.ent_energy = []
         self.test_acc = []
+        self.args = args
 
     def __del__(self):
         self.logger.del_logger()
