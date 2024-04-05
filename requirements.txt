@@ -1,7 +1,6 @@
 clip_anytorch==2.5.2
 matplotlib==3.5.1
 numpy==1.22.3
-Pillow==9.5.0
 Pillow==10.3.0
 PyYAML==6.0
 PyYAML==6.0.1

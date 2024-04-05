@@ -8,7 +8,7 @@ EVAL:
     n_query: 75                  # Number of samples in the query set
     shots: 0                     # Number of shots
     log_path: '.log/'
-    save_results: True           # Save the results in a .txt file in results_zero_shot/ and results_few_shot/
+    save_results: False           # Save the results in a .txt file in results_zero_shot/ and results_few_shot/
     used_test_set: 'test'        # Choose between 'val' or 'test'
     device: 0
     T: 30                        # Temperature for defining the features
