@@ -1,6 +1,6 @@
 EVAL:
-    dataset: 'food101'           # Choose from: oxfordpets, eurosat, ucf101, caltech101, dtd, fgvcaircraft, food101, flowers102, stanfordcars
-    method: 'em_dirichlet'       # For zero-shot: 'em_dirichlet', 'hard_em_dirichlet', 'hard_kmeans', 'kl_kmeans', 'soft_kmeans', 'em_gaussian', 'em_gaussian_cov', 'inductive_clip'
+    dataset: 'oxfordpets'           # Choose from: oxfordpets, eurosat, ucf101, caltech101, dtd, fgvcaircraft, food101, flowers102, stanfordcars, imagenet, sun397
+    method: 'paddle'       # For zero-shot: 'em_dirichlet', 'hard_em_dirichlet', 'hard_kmeans', 'kl_kmeans', 'soft_kmeans', 'em_gaussian', 'em_gaussian_cov', 'inductive_clip'
                                  # For few-shot: 'em_dirichlet', 'hard_em_dirichlet', 'paddle', 'alpha_tim', 'laplacian_shot', 'bdcspn'
     number_tasks: 5              # Number of tasks to evaluate
     batch_size: 5                # Batch size for the evaluation
@@ -8,9 +8,9 @@ EVAL:
     n_query: 75                  # Number of samples in the query set
     shots: 4                     # Number of shots
     log_path: '.log/'
-    save_results: True           # Save the results in a .txt file in results_zero_shot/ and results_few_shot/
+    save_results: False           # Save the results in a .txt file in results_zero_shot/ and results_few_shot/
     used_test_set: 'test'        # Choose between 'val' or 'test'
     device: 0
     T: 30                        # Temperature for defining the features
     backbone: 'RN50'             # CLIP's pretrained backbone
-    use_softmax_feature: True    # True to use the softmax features, False to use the visual embeddings directly
+    use_softmax_feature: False    # True to use the softmax features, False to use the visual embeddings directly

@@ -266,11 +266,11 @@ def extract_features_softmax(model, dataset, loader, set_name, args,
         features_save_path = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(
             args.dataset, set_name, args.backbone, T)
         if os.path.exists(features_save_path):
-            print('Features already saved for split {} and T = {}, skipping'.format(
+            print('Features already saved for {} set and T = {}, skipping'.format(
                 set_name, T))
             continue
         else:
-            print('Extracting features on {} for T = {}'.format(args.dataset, T))
+            print('Extracting {} features on {} for T = {}'.format(set_name, args.dataset, T))
 
         # Create text embeddings for all classes in the dataset
         text_features = clip_weights(
@@ -306,7 +306,7 @@ def extract_features_softmax(model, dataset, loader, set_name, args,
 
 
 def extract_features_visual(model, dataset, loader, set_name, args,
-                            device, list_T=[10, 20, 30, 40, 50]):
+                            device):
     """
         inputs:
             model : The loaded model containing the feature extractor
@@ -315,19 +315,18 @@ def extract_features_visual(model, dataset, loader, set_name, args,
             device : GPU device
 
         returns :
-            Saves the features in data/args.dataset/saved_features/ for T in list_T under the name 
-            '{}_visual_{}_T{}.plk'.format(set_name, args.backbone, T)
+            Saves the features in data/args.dataset/saved_features/ under the name 
+            '{}_visual_{}.plk'.format(set_name, args.backbone)
     """
-    for T in list_T:
-        # Check if features are already saved
-        features_save_path = 'data/{}/saved_features/{}_visual_{}_T{}.plk'.format(
-            args.dataset, set_name, args.backbone, T)
-        if os.path.exists(features_save_path):
-            print('Features already saved for split {} and T = {}, skipping'.format(
-                set_name, T))
-            continue
-        else:
-            print('Extracting features on {} for T = {}'.format(args.dataset, T))
+  
+    # Check if features are already saved
+    features_save_path = 'data/{}/saved_features/{}_visual_{}.plk'.format(
+        args.dataset, set_name, args.backbone)
+    if os.path.exists(features_save_path):
+        print('Features already saved for {} set, skipping'.format(
+            set_name))
+    else:
+        print('Extracting {} features on {}'.format(set_name, args.dataset))
 
         # Create text embeddings for all classes in the dataset
         text_features = clip_weights(
