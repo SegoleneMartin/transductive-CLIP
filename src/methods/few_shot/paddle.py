@@ -1,3 +1,9 @@
+#######################################################################
+# This file contains the implementation of the PADDLE method,
+# adapted from the NeurIPS 2022 paper entitled "Towards practical few-shot query sets: Transductive minimum description length inference":
+# https://github.com/SegoleneMartin/PADDLE
+#######################################################################
+
 from src.utils import get_one_hot,  Logger, clip_weights
 from tqdm import tqdm
 import torch

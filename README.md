@@ -60,7 +60,7 @@ The process of extracting features might be time-consuming, but once completed, 
 
 ## 2. Reproducing the zero-shot results
 
-You can reproduce the results displayed in Table 1 in the paper by using the ```config/main_config.yaml``` file.
+You can reproduce the results displayed in Table 1 in the paper by using the ```config/main_config.yaml``` file. Small variations in the results may be observed due to the randomization of the tasks.
 
 <img src="figures/table_1.png" scale=0.8/>
 
@@ -75,7 +75,21 @@ python main.py --opts shots 0 dataset caltech101 batch_size 100 number_tasks 100
 
 ## 3. Reproducing the few-shot results
 
+You can reproduce the results displayed in Table 2 in the paper by using the ```config/main_config.yaml``` file. Small variations in the results may be observed due to the randomization of the tasks.
 
+<img src="figures/table_2.png" scale=0.8/>
+
+The zero-shot methods are EM-Dirichlet (```em_dirichlet```), Hard EM-Dirichlet (```hard_em_dirichlet```), $\alpha$-TIM (```alpha_tim```), PADDLE (```paddle```), Laplacian Shot (```laplacian_shot```), BDSCPN (```bdcpsn```).
+
+Methods ($\alpha$-TIM, PADDLE, Laplacian Shot, BDCPSN) having a hyper-parameter have be previously tuned on the validation set (results stored in ``results_few_shot/val/``).
+
+For example, to run the method EM-Dirichlet on Caltech101 on 1000 realistic tranductive 4-shot tasks: 
+```python
+python main.py --opts shots 4 dataset caltech101 batch_size 100 number_tasks 1000 use_softmax_feature True
+```
+
+## Aknowlegments
+This repository was inspired by the publicly available code from the paper [Realistic evaluation of transductive few-shot learning](https://github.com/oveilleux/Realistic_Transductive_Few_Shot) and [TIP-Adapter](https://github.com/gaopengcuhk/Tip-Adapter).
 
 
 

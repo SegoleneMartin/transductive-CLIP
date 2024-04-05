@@ -1,5 +1,9 @@
-# Adaptation of the publicly available code of the ICML 2020 paper entitled "LaplacianShot: Laplacian Regularized Few Shot Learning":
+#######################################################################
+# This file contains the implementation of the LaplacianShot method,
+# adapted from the ICML 2020 paper entitled "LaplacianShot: Laplacian Regularized Few Shot Learning":
 # https://github.com/imtiazziko/LaplacianShot
+#######################################################################
+
 from src.utils import Logger, get_one_hot
 from sklearn.neighbors import NearestNeighbors
 import torch.nn.functional as F

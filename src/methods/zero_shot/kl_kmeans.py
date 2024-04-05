@@ -1,3 +1,10 @@
+#######################################################################
+# This file contains the implementation of the KL-Kmeans method.
+# Thanks to the authors of the paper "Simplex Clustering via sBeta with Applications to Online Adjustments of Black-Box Predictions"
+# for providing the implementation of the KL-Kmeans method:
+# https://github.com/fchiaroni/Clustering_Softmax_Predictions
+#######################################################################
+
 from src.utils import get_one_hot,  Logger, clip_weights, compute_graph_matching, compute_basic_matching
 from tqdm import tqdm
 import torch

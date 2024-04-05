@@ -1,12 +1,18 @@
+#######################################################################
+# This file contains the implementation of the TIM-GD method,
+# adapted from the NeurIPS 2020 paper entitled "TIM: Transductive Information Maximization",
+# and of the ALPHA_TIM method, adapted from the NeurIPS 2021 paper entitled
+# "Realistic evaluation of transductive few-shot learning".
+# https://github.com/mboudiaf/TIM and
+# https://github.com/oveilleux/Realistic_Transductive_Few_Shot
+#######################################################################
+
 from src.utils import get_one_hot,  Logger, clip_weights
 from tqdm import tqdm
 import torch
 import time
 from copy import deepcopy
 import numpy as np
-from scipy.sparse.csgraph import min_weight_full_bipartite_matching
-from scipy.sparse import csr_matrix
-from scipy.optimize import linear_sum_assignment
 
 
 class BASE(object):

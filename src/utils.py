@@ -270,7 +270,8 @@ def extract_features_softmax(model, dataset, loader, set_name, args,
                 set_name, T))
             continue
         else:
-            print('Extracting {} features on {} for T = {}'.format(set_name, args.dataset, T))
+            print('Extracting {} features on {} for T = {}'.format(
+                set_name, args.dataset, T))
 
         # Create text embeddings for all classes in the dataset
         text_features = clip_weights(
@@ -318,7 +319,7 @@ def extract_features_visual(model, dataset, loader, set_name, args,
             Saves the features in data/args.dataset/saved_features/ under the name 
             '{}_visual_{}.plk'.format(set_name, args.backbone)
     """
-  
+
     # Check if features are already saved
     features_save_path = 'data/{}/saved_features/{}_visual_{}.plk'.format(
         args.dataset, set_name, args.backbone)

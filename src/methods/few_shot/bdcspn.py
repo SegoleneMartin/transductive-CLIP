@@ -1,3 +1,8 @@
+#######################################################################
+# This file contains the implementation of the BD-CSPN method,
+# adapted from the ECCV 2020 paper entitled "Prototype rectification for few-shot learning."
+#######################################################################
+
 import torch.nn.functional as F
 from tqdm import tqdm
 import torch

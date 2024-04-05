@@ -96,12 +96,15 @@ class Evaluator_zero_shot:
 
         # Load the features: either the softmax features, either the visual embeddings
         if self.args.use_softmax_feature == True:
-            extract_features_softmax(model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
+            extract_features_softmax(
+                model, dataset, data_loaders['test'], 'test', self.args, self.device, list_T=[self.args.T])
             filepath_query = 'data/{}/saved_features/{}_softmax_{}_T{}.plk'.format(
                 self.args.dataset, self.args.used_test_set, self.args.backbone, self.args.T)
         else:
-            extract_features_visual(model, dataset, data_loaders['test'], 'test', self.args, self.device)
-            filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(self.args.dataset, self.args.used_test_set, self.args.backbone)
+            extract_features_visual(
+                model, dataset, data_loaders['test'], 'test', self.args, self.device)
+            filepath_query = 'data/{}/saved_features/{}_visual_{}.plk'.format(
+                self.args.dataset, self.args.used_test_set, self.args.backbone)
 
         extracted_features_dic_query = load_pickle(filepath_query)
 
