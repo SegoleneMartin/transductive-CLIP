@@ -13,7 +13,6 @@ template = 'a photo of a {}, a type of pet.'
 
 class OxfordPets(DatasetBase):
 
-
     def __init__(self, root):
         self.image_dir = os.path.join(root, 'images')
         self.anno_dir = os.path.join(root, 'annotations')
@@ -24,11 +23,11 @@ class OxfordPets(DatasetBase):
         train, val, test = self.read_split(self.split_path, self.image_dir)
 
         super().__init__(train_x=train, val=val, test=test)
-    
+
     def read_data(self, split_file):
         filepath = os.path.join(self.anno_dir, split_file)
         items = []
-        
+
         with open(filepath, 'r') as f:
             lines = f.readlines()
             for line in lines:
@@ -39,16 +38,16 @@ class OxfordPets(DatasetBase):
                 breed = breed.lower()
                 imname += '.jpg'
                 impath = os.path.join(self.image_dir, imname)
-                label = int(label) - 1 # convert to 0-based index
+                label = int(label) - 1  # convert to 0-based index
                 item = Datum(
                     impath=impath,
                     label=label,
                     classname=breed
                 )
                 items.append(item)
-        
+
         return items
-    
+
     @staticmethod
     def split_trainval(trainval, p_val=0.2):
         p_trn = 1 - p_val
@@ -57,7 +56,7 @@ class OxfordPets(DatasetBase):
         for idx, item in enumerate(trainval):
             label = item.label
             tracker[label].append(idx)
-        
+
         train, val = [], []
         for label, idxs in tracker.items():
             n_val = round(len(idxs) * p_val)
@@ -69,9 +68,9 @@ class OxfordPets(DatasetBase):
                     val.append(item)
                 else:
                     train.append(item)
-        
+
         return train, val
-    
+
     @staticmethod
     def save_split(train, val, test, filepath, path_prefix):
         def _extract(items):
@@ -85,7 +84,7 @@ class OxfordPets(DatasetBase):
                     impath = impath[1:]
                 out.append((impath, label, classname))
             return out
-        
+
         train = _extract(train)
         val = _extract(val)
         test = _extract(test)
@@ -98,7 +97,7 @@ class OxfordPets(DatasetBase):
 
         write_json(split, filepath)
         print(f'Saved split to {filepath}')
-    
+
     @staticmethod
     def read_split(filepath, path_prefix):
         def _convert(items):
@@ -112,7 +111,7 @@ class OxfordPets(DatasetBase):
                 )
                 out.append(item)
             return out
-        
+
         print(f'Reading split from {filepath}')
         split = read_json(filepath)
         train = _convert(split['train'])

@@ -1,5 +1,7 @@
 # Adaptation of the publicly available code of the ICML 2020 paper entitled "LaplacianShot: Laplacian Regularized Few Shot Learning":
 # https://github.com/imtiazziko/LaplacianShot
+from src.utils import Logger, get_one_hot
+from sklearn.neighbors import NearestNeighbors
 import torch.nn.functional as F
 from tqdm import tqdm
 import torch
@@ -10,8 +12,7 @@ import math
 from scipy import sparse
 import matplotlib
 matplotlib.use('Agg')
-from sklearn.neighbors import NearestNeighbors
-from src.utils import Logger, get_one_hot
+
 
 class LAPLACIAN_SHOT(object):
     def __init__(self, model, device, log_file, args):
@@ -19,7 +20,6 @@ class LAPLACIAN_SHOT(object):
         self.knn = args.knn
         self.norm_type = args.norm_type
         self.iter = args.iter
-        self.n_ways = args.n_ways
         self.number_tasks = args.batch_size
         self.model = model
         self.log_file = log_file
@@ -35,7 +35,6 @@ class LAPLACIAN_SHOT(object):
     def __del__(self):
         self.logger.del_logger()
 
-
     def record_info(self, acc, ent_energy, new_time, criterions):
         """
         inputs:
@@ -49,7 +48,8 @@ class LAPLACIAN_SHOT(object):
         self.timestamps.append(new_time)
 
     def get_logs(self):
-        self.test_acc = torch.stack(self.test_acc, dim=0).squeeze(2).cpu().numpy()
+        self.test_acc = torch.stack(
+            self.test_acc, dim=0).squeeze(2).cpu().numpy()
         self.ent_energy = np.array(self.ent_energy)
         self.timestamps = np.array(self.timestamps).mean()
         return {'timestamps': np.array(self.timestamps).mean(),
@@ -128,8 +128,10 @@ class LAPLACIAN_SHOT(object):
             for batch_idx in range(num_batch):
                 start = batch_idx * batch_size
                 end = min((batch_idx + 1) * batch_size, tot_size)
-                temp = (unary[start:end] * Y[start:end]) + (-bound_lambda * pairwise[start:end] * Y[start:end])
-                E = E + (Y[start:end] * np.log(np.maximum(Y[start:end], 1e-20)) + temp).sum()
+                temp = (unary[start:end] * Y[start:end]) + \
+                    (-bound_lambda * pairwise[start:end] * Y[start:end])
+                E = E + (Y[start:end] *
+                         np.log(np.maximum(Y[start:end], 1e-20)) + temp).sum()
 
         return E
 
@@ -151,14 +153,15 @@ class LAPLACIAN_SHOT(object):
             E_list.append(E)
             # print('entropy_energy is ' +repr(E) + ' at iteration ',i)
             l = np.argmax(Y, axis=1)
-            #out = np.take(y_s, l)
+            # out = np.take(y_s, l)
             out = l
             timestamps.append(time.time()-t0)
 
             if (i > 1 and (abs(E - oldE) <= 1e-6 * abs(oldE))):
                 # print('Converged')
                 out_list.append(torch.from_numpy(out))
-                acc_list.append((torch.from_numpy(y_q[task_i]) == torch.from_numpy(out)).float())
+                acc_list.append(
+                    (torch.from_numpy(y_q[task_i]) == torch.from_numpy(out)).float())
                 for j in range(bound_iteration-i-1):
                     out_list.append(out_list[i].detach().clone())
                     acc_list.append(acc_list[i].detach().clone())
@@ -170,7 +173,8 @@ class LAPLACIAN_SHOT(object):
                 oldE = E.copy()
 
                 out_list.append(torch.from_numpy(out))
-                acc_list.append((torch.from_numpy(y_q[task_i]) == torch.from_numpy(out)).float())
+                acc_list.append(
+                    (torch.from_numpy(y_q[task_i]) == torch.from_numpy(out)).float())
             t0 = time.time()
 
         out_list = torch.stack(out_list, dim=0)
@@ -190,7 +194,8 @@ class LAPLACIAN_SHOT(object):
         support = support.to(self.device)
         query = query.to(self.device)
 
-        one_hot = get_one_hot(y_s)
+        n_class = self.args.num_classes_test
+        one_hot = get_one_hot(y_s, n_class)
         counts = one_hot.sum(1).view(support.size()[0], -1, 1)
         weights = one_hot.transpose(1, 2).matmul(support)
         support = weights / counts
@@ -201,7 +206,8 @@ class LAPLACIAN_SHOT(object):
         y_q = y_q.cpu().numpy()
 
         # Run adaptation
-        self.run_prediction(support=support, query=query, y_s=y_s, y_q=y_q, shot=shot)
+        self.run_prediction(support=support, query=query,
+                            y_s=y_s, y_q=y_q, shot=shot)
 
         # Extract adaptation logs
         logs = self.get_logs()
@@ -221,7 +227,8 @@ class LAPLACIAN_SHOT(object):
             ent_energy
             inference time
         """
-        self.logger.info(" ==> Executing LAPLACIAN SHOT with lmd = {}".format(self.lmd))
+        self.logger.info(
+            " ==> Executing LAPLACIAN SHOT with lmd = {}".format(self.lmd))
         t0 = time.time()
         for i in tqdm(range(self.number_tasks)):
 
@@ -230,7 +237,8 @@ class LAPLACIAN_SHOT(object):
             unary = distance.transpose() ** 2
             W = self.create_affinity(query[i])
             preds, acc_list, ent_energy, times = self.bound_update(unary=unary, kernel=W, bound_lambda=self.lmd, y_s=y_s, y_q=y_q, task_i=i,
-                                                bound_iteration=self.iter)
-            
+                                                                   bound_iteration=self.iter)
+
             t1 = time.time()
-            self.record_info(acc=acc_list, ent_energy=ent_energy, new_time=t1 - t0, criterions=[0])
+            self.record_info(acc=acc_list, ent_energy=ent_energy,
+                             new_time=t1 - t0, criterions=[0])

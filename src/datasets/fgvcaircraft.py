@@ -9,7 +9,7 @@ template = 'a photo of a {}, a type of aircraft.'
 class FGVCAircraft(DatasetBase):
 
     def __init__(self, root):
-        
+
         self.image_dir = os.path.join(root, 'images')
         self.split_dir = root
         self.template = template
@@ -24,13 +24,13 @@ class FGVCAircraft(DatasetBase):
         train = self.read_data(cname2lab, 'images_variant_train.txt')
         val = self.read_data(cname2lab, 'images_variant_val.txt')
         test = self.read_data(cname2lab, 'images_variant_test.txt')
-                
+
         super().__init__(train_x=train, val=val, test=test)
-    
+
     def read_data(self, cname2lab, split_file):
         filepath = os.path.join(self.split_dir, split_file)
         items = []
-        
+
         with open(filepath, 'r') as f:
             lines = f.readlines()
             for line in lines:
@@ -45,5 +45,5 @@ class FGVCAircraft(DatasetBase):
                     classname=classname
                 )
                 items.append(item)
-        
+
         return items

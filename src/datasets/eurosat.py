@@ -23,23 +23,23 @@ NEW_CLASSNAMES = {
 
 class EuroSAT(DatasetBase):
 
-
     def __init__(self, root):
         self.image_dir = os.path.join(root, 'images')
         self.split_path = os.path.join(root, 'split_zhou_EuroSAT.json')
-        
+
         self.template = template
 
-        train, val, test = OxfordPets.read_split(self.split_path, self.image_dir)
-        
+        train, val, test = OxfordPets.read_split(
+            self.split_path, self.image_dir)
+
         super().__init__(train_x=train, val=val, test=test)
-    
+
     def update_classname(self, dataset_old):
         dataset_new = []
         for item_old in dataset_old:
             cname_old = item_old.classname
             cname_new = NEW_CLASSNAMES[cname_old]
-            cname_new = cname_old 
+            cname_new = cname_old
             item_new = Datum(
                 impath=item_old.impath,
                 label=item_old.label,

@@ -18,7 +18,7 @@ class StanfordCars(DatasetBase):
         train, val, test = OxfordPets.read_split(self.split_path, root)
 
         super().__init__(train_x=train, val=val, test=test)
-    
+
     def read_data(self, image_dir, anno_file, meta_file):
         anno_file = loadmat(anno_file)['annotations'][0]
         meta_file = loadmat(meta_file)['class_names'][0]
@@ -28,7 +28,7 @@ class StanfordCars(DatasetBase):
             imname = anno_file[i]['fname'][0]
             impath = os.path.join(self.dataset_dir, image_dir, imname)
             label = anno_file[i]['class'][0, 0]
-            label = int(label) - 1 # convert to 0-based index
+            label = int(label) - 1  # convert to 0-based index
             classname = meta_file[label][0]
             names = classname.split(' ')
             year = names.pop(-1)
@@ -40,5 +40,5 @@ class StanfordCars(DatasetBase):
                 classname=classname
             )
             items.append(item)
-        
+
         return items

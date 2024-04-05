@@ -12,7 +12,6 @@ template = 'a photo of a {}, a type of flower.'
 
 class Flowers102(DatasetBase):
 
-
     def __init__(self, root):
         self.image_dir = os.path.join(root, 'jpg')
         self.label_file = os.path.join(root, 'imagelabels.mat')
@@ -21,10 +20,11 @@ class Flowers102(DatasetBase):
 
         self.template = template
 
-        train, val, test = OxfordPets.read_split(self.split_path, self.image_dir)
-        
+        train, val, test = OxfordPets.read_split(
+            self.split_path, self.image_dir)
+
         super().__init__(train_x=train, val=val, test=test)
-    
+
     def read_data(self):
         tracker = defaultdict(list)
         label_file = loadmat(self.label_file)['labels'][0]
@@ -33,7 +33,7 @@ class Flowers102(DatasetBase):
             impath = os.path.join(self.image_dir, imname)
             label = int(label)
             tracker[label].append(impath)
-        
+
         print('Splitting data into 50% train, 20% val, and 30% test')
 
         def _collate(ims, y, c):
@@ -41,7 +41,7 @@ class Flowers102(DatasetBase):
             for im in ims:
                 item = Datum(
                     impath=im,
-                    label=y-1, # convert to 0-based label
+                    label=y-1,  # convert to 0-based label
                     classname=c
                 )
                 items.append(item)
@@ -60,5 +60,5 @@ class Flowers102(DatasetBase):
             train.extend(_collate(impaths[:n_train], label, cname))
             val.extend(_collate(impaths[n_train:n_train+n_val], label, cname))
             test.extend(_collate(impaths[n_train+n_val:], label, cname))
-        
+
         return train, val, test

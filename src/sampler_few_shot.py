@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 
+
 class CategoriesSampler_few_shot():
     """
             CategorySampler
@@ -20,31 +21,34 @@ class CategoriesSampler_few_shot():
                                [support_labels, query_labels]
     """
 
-    def __init__(self, n_batch, k_eff, n_ways, s_shot, n_query, force_query_size=False): 
-        self.n_batch = n_batch                      # the number of iterations in the dataloader
+    def __init__(self, n_batch, k_eff, n_class, s_shot, n_query, force_query_size=False):
+        # the number of iterations in the dataloader
+        self.n_batch = n_batch
         self.k_eff = k_eff
         self.s_shot = s_shot
         self.n_query = n_query
-        self.n_ways = n_ways
+        self.n_class = n_class
         self.force_query_size = force_query_size
-        self.list_classes = [i for i in range(n_ways)]
-        
+        self.list_classes = [i for i in range(n_class)]
+
     def create_list_classes(self, label_support, label_query):
 
         label_support = np.array(label_support)     # all data label
         self.m_ind_support = []                     # the data index of each class
         for i in range(max(label_support) + 1):
-            ind = np.argwhere(label_support == i).reshape(-1)  # all data index of this class
+            # all data index of this class
+            ind = np.argwhere(label_support == i).reshape(-1)
             ind = torch.from_numpy(ind)
             self.m_ind_support.append(ind)
 
         label_query = np.array(label_query)         # all data label
         self.m_ind_query = []                       # the data index of each class
         for i in range(max(label_support) + 1):
-            ind = np.argwhere(label_query == i).reshape(-1)  # all data index of this class
+            # all data index of this class
+            ind = np.argwhere(label_query == i).reshape(-1)
             ind = torch.from_numpy(ind)
             self.m_ind_query.append(ind)
-            
+
 
 class SamplerSupport_few_shot:
     def __init__(self, cat_samp):
@@ -62,11 +66,13 @@ class SamplerSupport_few_shot:
             support = []
             classes = self.list_classes
             for c in classes:
-                l = self.m_ind_support[c]                       # all data indexs of this class
-                pos = torch.randperm(len(l))[:self.s_shot]                 # select all data
+                # all data indexs of this class
+                l = self.m_ind_support[c]
+                # select all data
+                pos = torch.randperm(len(l))[:self.s_shot]
                 support.append(l[pos])
             support = torch.cat(support)
-           
+
             yield support
 
 
@@ -88,17 +94,19 @@ class SamplerQuery_few_shot:
             query_size = 0
             n_trials = 0
             while query_size < self.n_query and n_trials < 1:
-                classes = [self.list_classes[i] for i in torch.randperm(len(self.list_classes))[:self.k_eff].tolist()]
+                classes = [self.list_classes[i] for i in torch.randperm(
+                    len(self.list_classes))[:self.k_eff].tolist()]
                 query = []
 
                 complete_possible_samples = self.m_ind_query[classes[0]]
                 for c in classes[1:]:
-                    complete_possible_samples = torch.cat((complete_possible_samples, self.m_ind_query[c]))
-                pos = torch.randperm(len(complete_possible_samples))[:self.n_query]
+                    complete_possible_samples = torch.cat(
+                        (complete_possible_samples, self.m_ind_query[c]))
+                pos = torch.randperm(len(complete_possible_samples))[
+                    :self.n_query]
                 query = complete_possible_samples[pos]
-                    
+
                 if self.force_query_size == False:
                     n_trials += 1
                 query_size = len(query)
             yield query
-

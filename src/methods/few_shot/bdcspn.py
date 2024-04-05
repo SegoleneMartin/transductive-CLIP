@@ -5,6 +5,7 @@ from src.utils import Logger, get_one_hot
 import time
 import numpy as np
 
+
 class BDCSPN(object):
     def __init__(self, model, device, log_file, args):
         self.device = device
@@ -12,20 +13,17 @@ class BDCSPN(object):
         self.temp = args.temp
         self.model = model
         self.log_file = log_file
-        self.n_ways = args.n_ways
+        self.n_class = args.n_class
         self.logger = Logger(__name__, self.log_file)
         self.init_info_lists()
 
-
     def __del__(self):
         self.logger.del_logger()
-
 
     def init_info_lists(self):
         self.timestamps = []
         self.criterions = []
         self.test_acc = []
-
 
     def record_convergence(self, new_time, criterions):
         """
@@ -35,7 +33,6 @@ class BDCSPN(object):
         """
         self.criterions.append(criterions)
         self.timestamps.append(new_time)
-
 
     def get_logits(self, w, samples):
         """
@@ -53,7 +50,6 @@ class BDCSPN(object):
             diff = w.unsqueeze(0) - samples.unsqueeze(1)  # n x K x C
         logits = (diff.square_()).sum(dim=-1)
         return - 1 / 2 * logits  # N x n x K
-    
 
     def compute_acc(self, y_q, preds_q):
         """
@@ -63,13 +59,12 @@ class BDCSPN(object):
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
 
-
     def get_logs(self):
-        self.criterions = torch.stack(self.criterions, dim=0).detach().cpu().numpy()
+        self.criterions = torch.stack(
+            self.criterions, dim=0).detach().cpu().numpy()
         self.test_acc = torch.cat(self.test_acc, dim=1).detach().cpu().numpy()
-        return {'timestamps': np.array(self.timestamps).mean(), 'criterions':self.criterions,
+        return {'timestamps': np.array(self.timestamps).mean(), 'criterions': self.criterions,
                 'acc': self.test_acc}
-
 
     def normalization(self, z_s, z_q, train_mean):
         """
@@ -80,21 +75,20 @@ class BDCSPN(object):
         """
         # Ensure train_mean is unsqueezed to match the dimensions of z_s and z_q
         train_mean = train_mean.unsqueeze(1)
-        
+
         # CL2N Normalization
         if self.norm_type == 'CL2N':
             z_s = z_s - train_mean
             z_s = z_s / z_s.norm(p=2, dim=2, keepdim=True)
             z_q = z_q - train_mean
             z_q = z_q / z_q.norm(p=2, dim=2, keepdim=True)
-        
+
         # L2 Normalization
         elif self.norm_type == 'L2N':
             z_s = z_s / z_s.norm(p=2, dim=2, keepdim=True)
             z_q = z_q / z_q.norm(p=2, dim=2, keepdim=True)
-        
-        return z_s, z_q
 
+        return z_s, z_q
 
     def proto_rectification(self, support, query, y_s, shot):
         """
@@ -106,25 +100,29 @@ class BDCSPN(object):
             y_q : torch.Tensor of shape [n_task, n_query]
             shot : scalar indicating the number of shots
         """
-        self.logger.info(f" ==> Executing proto_rectification on {shot} shot tasks ...")
+        self.logger.info(
+            f" ==> Executing proto_rectification on {shot} shot tasks ...")
 
-        n_tasks, n_query, feature_dim = query.shape
-        prototypes = torch.zeros(n_tasks, self.n_ways, feature_dim, device=query.device)
+        n_task, n_query, feature_dim = query.shape
+        prototypes = torch.zeros(n_task, self.n_class,
+                                 feature_dim, device=query.device)
 
         # Compute initial prototypes by averaging support features per class
-        y_s_one_hot = get_one_hot(y_s)
+        n_class = self.args.num_classes_test
+        y_s_one_hot = get_one_hot(y_s, n_class)
         counts = (y_s_one_hot.sum(1)).unsqueeze(-1)
         weights = (y_s_one_hot.unsqueeze(-1) * (support.unsqueeze(2))).sum(1)
-        init_prototypes = weights.div_(counts)     
-        
+        init_prototypes = weights.div_(counts)
+
         # Iterate over each task
-        for j in tqdm(range(n_tasks)):
+        for j in tqdm(range(n_task)):
             # Compute mean of support set to shift the query set for rectification
             eta = support[j].mean(0) - query[j].mean(0)
             query_shifted = query[j] + eta
 
             # Combine the support and shifted query sets
-            query_aug = torch.cat((support[j], query_shifted), dim=0)  # n x dim_features
+            query_aug = torch.cat(
+                (support[j], query_shifted), dim=0)  # n x dim_features
 
             # Compute weights of query_aug using the temperature-scaled cosine similarity
             cos_sim = self.get_logits(init_prototypes[j], query_aug)
@@ -134,14 +132,14 @@ class BDCSPN(object):
             query_aug = query_aug / query_aug.norm(p=2, dim=-1, keepdim=True)
             counts = (u.sum(0)).unsqueeze(-1)
             weights = (u.unsqueeze(-1) * (query_aug.unsqueeze(1))).sum(0)
-            prototypes[j] = weights.div_(counts)     
+            prototypes[j] = weights.div_(counts)
 
         return prototypes
 
     def run_task(self, task_dic, shot):
         """
         inputs:
-            task_dic : dictionnary with n_tasks few-shot tasks
+            task_dic : dictionnary with n_task few-shot tasks
             shot : scalar, number of shots
         """
 
@@ -161,7 +159,8 @@ class BDCSPN(object):
         support, query = self.normalization(support, query, train_mean)
 
         # Run method
-        self.run_method(support=support, query=query, y_s=y_s, y_q=y_q, shot=shot)
+        self.run_method(support=support, query=query,
+                        y_s=y_s, y_q=y_q, shot=shot)
 
         # Extract adaptation logs
         logs = self.get_logs()
@@ -178,10 +177,11 @@ class BDCSPN(object):
             y_q : torch.Tensor of shape [n_task, n_query]
         """
         self.logger.info(f" ==> Executing BD-CSPN")
-        
+
         t0 = time.time()
         # Prototype rectification
-        prototypes = self.proto_rectification(support=support, query=query, y_s=y_s, shot=shot)
+        prototypes = self.proto_rectification(
+            support=support, query=query, y_s=y_s, shot=shot)
 
         # Calculate distances between all support and query features
         cos_sim = self.get_logits(prototypes, query)
@@ -189,7 +189,8 @@ class BDCSPN(object):
         preds_q = u.argmax(2)
 
         t1 = time.time()
-        # Record the information 
-        self.record_convergence(new_time=t1-t0, criterions=torch.zeros(1).to(self.device))
-            
+        # Record the information
+        self.record_convergence(
+            new_time=t1-t0, criterions=torch.zeros(1).to(self.device))
+
         self.compute_acc(y_q, preds_q)

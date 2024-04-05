@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import random
 
+
 class CategoriesSampler_zero_shot():
     """
     CategorySampler
@@ -18,21 +19,22 @@ class CategoriesSampler_zero_shot():
                     [query_labels]
     """
 
-    def __init__(self, n_batch, k_eff, n_ways, n_query, force_query_size=False):
+    def __init__(self, n_batch, k_eff, n_class, n_query, force_query_size=False):
         self.n_batch = n_batch
         self.k_eff = k_eff
         self.n_query = n_query
-        self.n_ways = n_ways
+        self.n_class = n_class
         self.force_query_size = force_query_size
         self.m_ind_query = []
-        self.list_classes = [i for i in range(n_ways)]
-        
+        self.list_classes = [i for i in range(n_class)]
+
     def create_list_classes(self, label_query):
 
         label_query = np.array(label_query)
-        for i in range(self.n_ways):
+        for i in range(self.n_class):
             ind = np.argwhere(label_query == i).reshape(-1)
             self.m_ind_query.append(torch.from_numpy(ind))
+
 
 class SamplerQuery_zero_shot:
     def __init__(self, cat_samp):
@@ -53,17 +55,18 @@ class SamplerQuery_zero_shot:
             query_size = 0
             n_trials = 0
             while query_size < self.n_query and n_trials < 1:
-                classes = [self.list_classes[i] for i in torch.randperm(len(self.list_classes))[:self.k_eff].tolist()]
+                classes = [self.list_classes[i] for i in torch.randperm(
+                    len(self.list_classes))[:self.k_eff].tolist()]
                 query = []
                 complete_possible_samples = self.m_ind_query[classes[0]]
                 for c in classes[1:]:
-                    complete_possible_samples = torch.cat((complete_possible_samples, self.m_ind_query[c]))
-                pos = torch.randperm(len(complete_possible_samples))[:self.n_query]
+                    complete_possible_samples = torch.cat(
+                        (complete_possible_samples, self.m_ind_query[c]))
+                pos = torch.randperm(len(complete_possible_samples))[
+                    :self.n_query]
                 query = complete_possible_samples[pos]
-                
+
                 if self.force_query_size == False:
                     n_trials += 1
                 query_size = len(query)
             yield query
-
-   

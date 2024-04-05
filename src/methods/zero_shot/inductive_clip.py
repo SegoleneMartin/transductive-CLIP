@@ -1,4 +1,4 @@
-from src.utils import get_one_hot, get_one_hot_full, Logger, clip_weights, compute_graph_matching, compute_basic_matching
+from src.utils import get_one_hot,  Logger, clip_weights, compute_graph_matching, compute_basic_matching
 from tqdm import tqdm
 import torch
 import time
@@ -16,13 +16,11 @@ class BASE(object):
         self.init_info_lists()
         self.args = args
 
-
     def init_info_lists(self):
         self.timestamps = []
         self.criterions = []
         self.test_acc = []
-    
-    
+
     def get_logits(self, samples):
         """
         inputs:
@@ -33,7 +31,6 @@ class BASE(object):
         diff = self.w.unsqueeze(1) - samples.unsqueeze(2)  # N x n x K x C
         logits = (diff.square_()).sum(dim=-1)
         return logits  # N x n x K
-    
 
     def record_convergence(self, new_time, criterions):
         """
@@ -43,7 +40,7 @@ class BASE(object):
         """
         self.criterions.append(criterions)
         self.timestamps.append(new_time)
-    
+
     def compute_acc(self, y_q):
         """
         inputs:
@@ -54,18 +51,16 @@ class BASE(object):
         accuracy = (preds_q == y_q).float().mean(1, keepdim=True)
         self.test_acc.append(accuracy)
 
-
     def get_logs(self):
         self.criterions = torch.stack(self.criterions, dim=0).cpu().numpy()
         self.test_acc = torch.cat(self.test_acc, dim=1).cpu().numpy()
-        return {'timestamps': np.array(self.timestamps).mean(), 'criterions':self.criterions,
+        return {'timestamps': np.array(self.timestamps).mean(), 'criterions': self.criterions,
                 'acc': self.test_acc}
-
 
     def run_task(self, task_dic):
         """
         inputs:
-            task_dic : dictionnary with n_tasks few-shot tasks
+            task_dic : dictionnary with n_task few-shot tasks
             shot : scalar, number of shots
         """
 
@@ -77,7 +72,7 @@ class BASE(object):
         query = query.to(self.device).float()
         y_q = y_q.long().squeeze(2).to(self.device)
         del task_dic
-           
+
         # Run adaptation
         self.run_method(query=query, y_q=y_q)
 
@@ -94,7 +89,6 @@ class CLIP(BASE):
     def __del__(self):
         self.logger.del_logger()
 
-
     def run_method(self, query, y_q):
         """
         Corresponds to the ZERO SHOT CLIP inference
@@ -110,21 +104,26 @@ class CLIP(BASE):
 
         self.logger.info(" ==> Executing CLIP")
         n_task = query.shape[0]
-        
-        n_task, n_ways = query.shape[0], self.args.num_classes_test
-        
+
+        n_task, n_class = query.shape[0], self.args.num_classes_test
+
         # Initialization
         if self.args.use_softmax_feature:
             self.u = deepcopy(query)
         else:
-            self.u = torch.zeros((n_task, query.shape[1], n_ways)).to(self.device)
-            text_features = clip_weights(self.model, self.args.classnames, self.args.template, self.device)
+            self.u = torch.zeros(
+                (n_task, query.shape[1], n_class)).to(self.device)
+            text_features = clip_weights(
+                self.model, self.args.classnames, self.args.template, self.device)
             for task in range(n_task):
-                image_features = query[task] / query[task].norm(dim=-1, keepdim=True)
-                sim = (self.args.T * (image_features @ text_features.T)).softmax(dim=-1) # N* K
+                image_features = query[task] / \
+                    query[task].norm(dim=-1, keepdim=True)
+                sim = (self.args.T * (image_features @ text_features.T)
+                       ).softmax(dim=-1)  # N* K
                 self.u[task] = sim
-            
+
         u_old = deepcopy(self.u)
-        self.record_convergence(new_time=0, criterions=(u_old - self.u).norm(dim=(1,2)).mean(0))
-            
+        self.record_convergence(new_time=0, criterions=(
+            u_old - self.u).norm(dim=(1, 2)).mean(0))
+
         self.compute_acc(y_q)

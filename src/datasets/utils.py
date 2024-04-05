@@ -7,6 +7,7 @@ from torch.utils.data import Dataset as TorchDataset
 import torchvision.transforms as T
 from PIL import Image
 
+
 def read_image(path):
     """Read image from path using ``PIL.Image``.
 
@@ -44,7 +45,7 @@ def write_json(obj, fpath):
     with open(fpath, 'w') as f:
         json.dump(obj, f, indent=4, separators=(',', ': '))
 
-        
+
 class Datum:
     """Data instance which defines the basic attributes.
 
@@ -89,15 +90,15 @@ class DatasetBase:
     2) domain generalization
     3) semi-supervised learning
     """
-    dataset_dir = '' # the directory where the dataset is stored
-    domains = [] # string names of all domains
+    dataset_dir = ''  # the directory where the dataset is stored
+    domains = []  # string names of all domains
 
     def __init__(self, train_x=None, train_u=None, val=None, test=None, classnames=None):
-        self._train_x = train_x # labeled training data
-        self._train_u = train_u # unlabeled training data (optional)
-        self._val = val # validation data (optional)
-        self._test = test # test data
-        
+        self._train_x = train_x  # labeled training data
+        self._train_u = train_u  # unlabeled training data (optional)
+        self._val = val  # validation data (optional)
+        self._test = test  # test data
+
         self._num_classes = self.get_num_classes(train_x)
         self._lab2cname, self._classnames = self.get_lab2cname(train_x)
 
@@ -266,7 +267,7 @@ class DatasetWrapper(TorchDataset):
     def __init__(self, data_source, input_size, transform=None, is_train=False,
                  return_img0=False, k_tfm=1):
         self.data_source = data_source
-        self.transform = transform # accept list (tuple) as input
+        self.transform = transform  # accept list (tuple) as input
         self.is_train = is_train
         # Augmenting an image K>1 times is only allowed during training
         self.k_tfm = k_tfm if is_train else 1
@@ -293,7 +294,7 @@ class DatasetWrapper(TorchDataset):
         to_tensor = []
         to_tensor += [T.ToTensor()]
         self.to_tensor = T.Compose(to_tensor)
-        
+
     def __len__(self):
         return len(self.data_source)
 
@@ -308,7 +309,7 @@ class DatasetWrapper(TorchDataset):
         img0 = read_image(item.impath)
         img = self.transform(img0)
         output['img'] = img
-        
+
         return output['img'], output['label']
 
 
@@ -327,7 +328,8 @@ def build_data_loader(
 
     # Build data loader
     data_loader = torch.utils.data.DataLoader(
-        dataset_wrapper(data_source, input_size=input_size, transform=tfm, is_train=is_train),
+        dataset_wrapper(data_source, input_size=input_size,
+                        transform=tfm, is_train=is_train),
         batch_size=batch_size,
         num_workers=0,
         shuffle=shuffle,
@@ -346,13 +348,15 @@ def listdir_nohidden(path, sort=False):
          path (str): directory path.
          sort (bool): sort the items.
     """
-    items = [f for f in os.listdir(path) if not f.startswith('.') and 'sh' not in f]
+    items = [f for f in os.listdir(
+        path) if not f.startswith('.') and 'sh' not in f]
     if sort:
         items.sort()
     return items
 
+
 def collate_fn(batch):
     return {
-      'pixel_values': torch.stack([x['pixel_values'] for x in batch]),
-      'labels': torch.tensor([x['labels'] for x in batch])
+        'pixel_values': torch.stack([x['pixel_values'] for x in batch]),
+        'labels': torch.tensor([x['labels'] for x in batch])
     }

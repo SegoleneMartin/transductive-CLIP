@@ -1,12 +1,13 @@
 import torch
 
+
 class Tasks_Generator_zero_shot:
-    def __init__(self, k_eff, n_query, n_ways, loader_query, model, args):
+    def __init__(self, k_eff, n_query, n_class, loader_query, model, args):
         """
         Initialize the Tasks_Generator.
         :param k_eff: Effective number of samples per class in support set.
         :param n_query: Number of samples in the query set.
-        :param n_ways: Number of classes (typically the total number of classes in the test set).
+        :param n_class: Number of classes (typically the total number of classes in the test set).
         :param loader_query: Data loader for the query set.
         :param model: Model used for extracting features.
         :param args: Additional arguments.
@@ -15,10 +16,9 @@ class Tasks_Generator_zero_shot:
         self.k_eff = k_eff
         self.n_query = n_query
         self.loader_query = loader_query
-        self.n_ways = n_ways
+        self.n_class = n_class
         self.model = model
         self.args = args
-        
 
     def get_task(self, data_query, labels_query):
         """
@@ -32,7 +32,6 @@ class Tasks_Generator_zero_shot:
 
         task = {'x_q': data_query, 'y_q': labels_query.long()}
         return task
-
 
     def generate_tasks(self):
         """
@@ -51,17 +50,16 @@ class Tasks_Generator_zero_shot:
 
         # Now merging all tasks into 1 single dictionnary
         merged_tasks = {}
-        n_tasks = len(tasks_dics)
+        n_task = len(tasks_dics)
         for key in tasks_dics[0].keys():
             n_samples = tasks_dics[0][key].size(0)
             if key == 'x_q':
-                merged_tasks[key] = torch.cat([tasks_dics[i][key] for i in range(n_tasks)], dim=0).view(n_tasks,
-                                                                                                        n_samples, feature_size)
+                merged_tasks[key] = torch.cat([tasks_dics[i][key] for i in range(n_task)], dim=0).view(n_task,
+                                                                                                       n_samples, feature_size)
             elif key == 'y_q':
-                merged_tasks[key] = torch.cat([tasks_dics[i][key] for i in range(n_tasks)], dim=0).view(n_tasks,
-                                                                                                        n_samples, -1)
+                merged_tasks[key] = torch.cat([tasks_dics[i][key] for i in range(n_task)], dim=0).view(n_task,
+                                                                                                       n_samples, -1)
             else:
                 raise Exception("Wrong dict key")
 
         return merged_tasks
-

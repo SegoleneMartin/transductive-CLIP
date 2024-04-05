@@ -16,10 +16,11 @@ class UCF101(DatasetBase):
 
         self.template = template
 
-        train, val, test = OxfordPets.read_split(self.split_path, self.image_dir)
+        train, val, test = OxfordPets.read_split(
+            self.split_path, self.image_dir)
 
         super().__init__(train_x=train, val=val, test=test)
-    
+
     def read_data(self, cname2lab, text_file):
         text_file = os.path.join(self.dataset_dir, text_file)
         items = []
@@ -27,7 +28,7 @@ class UCF101(DatasetBase):
         with open(text_file, 'r') as f:
             lines = f.readlines()
             for line in lines:
-                line = line.strip().split(' ')[0] # trainlist: filename, label
+                line = line.strip().split(' ')[0]  # trainlist: filename, label
                 action, filename = line.split('/')
                 label = cname2lab[action]
 
@@ -43,5 +44,5 @@ class UCF101(DatasetBase):
                     classname=renamed_action
                 )
                 items.append(item)
-        
+
         return items

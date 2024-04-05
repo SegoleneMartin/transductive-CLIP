@@ -12,15 +12,17 @@ class DescribableTextures(DatasetBase):
 
     def __init__(self, root):
         self.image_dir = os.path.join(root, 'images')
-        self.split_path = os.path.join(root, 'split_zhou_DescribableTextures.json')
+        self.split_path = os.path.join(
+            root, 'split_zhou_DescribableTextures.json')
 
         self.template = template
 
-        train, val, test = OxfordPets.read_split(self.split_path, self.image_dir)
-        #train = self.generate_fewshot_dataset(train, num_shots=num_shots)
+        train, val, test = OxfordPets.read_split(
+            self.split_path, self.image_dir)
+        # train = self.generate_fewshot_dataset(train, num_shots=num_shots)
 
         super().__init__(train_x=train, val=val, test=test)
-    
+
     @staticmethod
     def read_and_split_data(
         image_dir,
@@ -41,14 +43,15 @@ class DescribableTextures(DatasetBase):
         categories.sort()
 
         p_tst = 1 - p_trn - p_val
-        print(f'Splitting into {p_trn:.0%} train, {p_val:.0%} val, and {p_tst:.0%} test')
+        print(
+            f'Splitting into {p_trn:.0%} train, {p_val:.0%} val, and {p_tst:.0%} test')
 
         def _collate(ims, y, c):
             items = []
             for im in ims:
                 item = Datum(
                     impath=im,
-                    label=y, # is already 0-based
+                    label=y,  # is already 0-based
                     classname=c
                 )
                 items.append(item)
@@ -70,7 +73,8 @@ class DescribableTextures(DatasetBase):
                 category = new_cnames[category]
 
             train.extend(_collate(images[:n_train], label, category))
-            val.extend(_collate(images[n_train:n_train+n_val], label, category))
+            val.extend(
+                _collate(images[n_train:n_train+n_val], label, category))
             test.extend(_collate(images[n_train+n_val:], label, category))
-        
+
         return train, val, test
