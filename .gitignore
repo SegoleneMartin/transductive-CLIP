@@ -1,6 +1,7 @@
 *.zip
 *.pt
 *.plk
+*.gz
 data/
 logs
 results_old/
