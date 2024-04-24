@@ -1,6 +1,6 @@
 # Transductive zero-shot and few-shot CLIP
 
-This GitHub repository features code from our paper where we tackle zero-shot and few-shot classification using vision-language models like CLIP. Our approach handles groups of unlabeled images together, enhancing accuracy over traditional methods that consider each image separately. We build a new classification framework based on classification of probability features and an optimization technique that mimics the Expectation-Maximization algorithm. On zero-shot tasks with test batches of 75 samples, our approaches **EM-Dirichlet** and **Hard EM-Dirichlet** yield near 20% improvement in ImageNet accuracy over CLIP's zero-shot performance. 
+This GitHub repository features code from our [CVPR 2024 paper](https://hal.science/hal-04534868v1/document) where we tackle zero-shot and few-shot classification using the vision-language model CLIP. Our approach handles groups of unlabeled images together, enhancing accuracy over traditional methods that consider each image separately. We build a new classification framework based on classification of probability features and an optimization technique that mimics the Expectation-Maximization algorithm. On zero-shot tasks with test batches of 75 samples, our approaches **EM-Dirichlet** and **Hard EM-Dirichlet** yield near 20% improvement in ImageNet accuracy over CLIP's zero-shot performance. 
 
 <img src="figures/framework.png" scale=0.8/>
 
