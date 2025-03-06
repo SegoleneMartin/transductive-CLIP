@@ -20,6 +20,7 @@ This GitHub repository features code from our [CVPR 2024 paper](https://hal.scie
 
 ### 1.2 Download datasets and splits
 For downloading the datasets and splits, we follow the instructions given in the Github repository of [TIP-Adapter](https://github.com/gaopengcuhk/Tip-Adapter). We use train/val/test splits from [CoOp's Github](https://github.com/KaiyangZhou/CoOp) for all datasets except ImageNet where the validation set is used as test set.
+The splits for imagenet can be downloaded at [https://drive.google.com/drive/fol ](https://drive.google.com/drive/folders/1Y2Po9ZY4JPJHuf5dGACFoNBIob3MNoMg?usp=sharing).
 
 The downloaded datasets should be placed in the folder data/ the following way:
 
